@@ -1,0 +1,42 @@
+name: my_app
+description: "A new Flutter project."
+
+publish_to: "none" # Remove this line if you wish to publish to pub.dev
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.7.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_keyboard_visibility: ^6.0.0
+  provider: ^6.0.0
+  shared_preferences: ^2.2.2
+
+  # External dependencies
+  cached_network_image: ^3.3.0
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/asset/no_orders.png
+    - assets/asset/profile_picture.jpg
+
+    - assets/food/mie_ayam.jpg
+    - assets/food/bakso.jpg
+    - assets/food/soto_ayam.jpg
+    - assets/food/nasi_pecel.jpg
+
+    - assets/drink/matcha_latte.jpg
+    - assets/drink/cappucino.jpg
+
+    - assets/snack/burger.jpg
+    - assets/snack/french_fries.jpg
