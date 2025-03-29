@@ -56,6 +56,6 @@ class SearchData {
 
   // Data untuk popular cuisines (tetap statis)
   static List<String> getPopularCuisines() {
-    return ['Snack', 'Beverages', 'Noodles', 'Rice', 'Bakso & Soto', 'Coffee'];
+    return ['Soto', 'Nasi Pecel', 'Bakso', 'Rice', 'Bakso & Soto', 'Coffee'];
   }
 }

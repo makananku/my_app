@@ -7,11 +7,25 @@ import '../widgets/custom_bottom_navigation.dart';
 import '../models/cart_item.dart';
 import '../models/favorite_item.dart';
 import 'favorite_screen.dart';
-import '../data/food_data.dart';
 import '../data/search_data.dart';
+import '../widgets/search_widget.dart';
+import '../widgets/category_selector.dart';
+import '../widgets/food_list.dart';
+import '../widgets/detail_box.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final String? initialFoodItem;
+  final String? initialFoodPrice;
+  final String? initialFoodImgUrl;
+  final String? initialFoodSubtitle;
+
+  const HomeScreen({
+    super.key,
+    this.initialFoodItem,
+    this.initialFoodPrice,
+    this.initialFoodImgUrl,
+    this.initialFoodSubtitle,
+  });
 
   @override
   _HomeScreenState createState() => _HomeScreenState();
@@ -24,12 +38,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   String selectedFoodItem = '';
   String selectedFoodPrice = '';
   String selectedFoodImgUrl = '';
+  String selectedFoodSubtitle = '';
   late AnimationController _boxController;
   late AnimationController _navController;
   final TextEditingController _searchController = TextEditingController();
 
-  bool isSearchVisible = false;
   bool isKeyboardVisible = false;
+  bool isSearchActive = false;
+  String searchQuery = '';
 
   final FocusNode _searchFocusNode = FocusNode();
 
@@ -44,7 +60,29 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       vsync: this,
       duration: const Duration(milliseconds: 300),
     );
-    _loadRecentSearches(); // Load recent searches saat inisialisasi
+    _loadRecentSearches();
+
+    _searchFocusNode.addListener(() {
+      setState(() {
+        isSearchActive = _searchFocusNode.hasFocus;
+      });
+    });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (widget.initialFoodItem != null &&
+          widget.initialFoodPrice != null &&
+          widget.initialFoodImgUrl != null) {
+        setState(() {
+          selectedFoodItem = widget.initialFoodItem!;
+          selectedFoodPrice = widget.initialFoodPrice!;
+          selectedFoodImgUrl = widget.initialFoodImgUrl!;
+          selectedFoodSubtitle = widget.initialFoodSubtitle ?? '';
+          isDetailVisible = true;
+          _boxController.forward();
+          _navController.reverse();
+        });
+      }
+    });
   }
 
   @override
@@ -59,63 +97,144 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   Future<bool> _onWillPop() async {
     if (isDetailVisible) {
       _closeDetailBox();
-      return Future.value(false);
+      return false;
     }
-    if (isSearchVisible) {
-      setState(() {
-        isSearchVisible = false;
-      });
-      return Future.value(false);
+    if (isSearchActive) {
+      if (isKeyboardVisible) {
+        FocusScope.of(context).unfocus();
+        return false;
+      } else {
+        setState(() {
+          isSearchActive = false;
+          _searchFocusNode.unfocus();
+        });
+        return false;
+      }
     }
-    return Future.value(true);
+    return true;
   }
 
-  // Simulated data refresh method
   Future<void> _refreshData() async {
     await Future.delayed(const Duration(seconds: 2));
     setState(() {});
   }
 
-  // Fungsi untuk memuat recent searches dari SharedPreferences
   Future<void> _loadRecentSearches() async {
     await SearchData.loadRecentSearches();
-    setState(() {}); // Perbarui UI setelah data dimuat
+    setState(() {});
   }
 
-  // Fungsi untuk menangani pencarian
   void _handleSearch(String query) {
-    if (query.isNotEmpty) {
-      SearchData.addRecentSearch(query); // Tambahkan ke recent searches
-      setState(() {}); // Perbarui UI
-      // Lakukan logika pencarian (misalnya, filter daftar makanan)
-      // ...
-    }
+    setState(() {
+      searchQuery = query;
+    });
   }
 
-  // Fungsi untuk menghapus recent search
   void _removeRecentSearch(String query) {
-    SearchData.removeRecentSearch(query); // Hapus dari recent searches
-    setState(() {}); // Perbarui UI
+    SearchData.removeRecentSearch(query);
+    setState(() {});
+  }
+
+  void _fillSearchBar(String query) {
+    setState(() {
+      _searchController.text = query;
+      searchQuery = query;
+    });
+  }
+
+  void _onCategorySelected(String category) {
+    setState(() {
+      selectedCategory = category;
+      if (isDetailVisible) {
+        isDetailVisible = false;
+      }
+    });
+  }
+
+  void _closeDetailBox() {
+    setState(() {
+      isDetailVisible = false;
+    });
+    _boxController.reverse();
+    _navController.forward();
+  }
+
+  void _handleFoodItemTap(String title, String price, String imgUrl, String subtitle) {
+    setState(() {
+      selectedFoodItem = title;
+      selectedFoodPrice = price;
+      selectedFoodImgUrl = imgUrl;
+      selectedFoodSubtitle = subtitle;
+      isDetailVisible = true;
+      _boxController.forward();
+      _navController.reverse();
+    });
+  }
+
+  Widget _buildMainContent(ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 8),
+        Padding(
+          padding: const EdgeInsets.only(left: 24.0),
+          child: Text(
+            "Recommended for you",
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: Colors.black,
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        FoodList(
+          selectedCategory: selectedCategory,
+          onFoodItemTap: _handleFoodItemTap,
+        ),
+        const SizedBox(height: 24),
+        Padding(
+          padding: const EdgeInsets.only(left: 24.0),
+          child: Text(
+            "Order Again",
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: Colors.black,
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        FoodList(
+          selectedCategory: selectedCategory,
+          onFoodItemTap: _handleFoodItemTap,
+        ),
+        const SizedBox(height: 100),
+      ],
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final favoriteProvider = Provider.of<FavoriteProvider>(context);
+    final theme = Theme.of(context);
 
     return WillPopScope(
       onWillPop: _onWillPop,
       child: KeyboardVisibilityProvider(
         child: Scaffold(
+          backgroundColor: Colors.grey[50],
           appBar: AppBar(
-            title: const Text(
+            title: Text(
               'Home',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
             ),
             centerTitle: true,
             leading: IconButton(
               icon: Stack(
                 children: [
-                  const Icon(Icons.favorite_border),
+                  const Icon(Icons.favorite_border, color: Colors.black),
                   if (favoriteProvider.favoriteItems.isNotEmpty)
                     Positioned(
                       right: 0,
@@ -142,7 +261,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 ],
               ),
               onPressed: () {
-                // Navigate to Favorites Screen
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -153,269 +271,181 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             ),
             actions: [
               IconButton(
-                icon: const Icon(Icons.notifications_outlined),
-                onPressed: () {
-                  // Handle notification icon press
-                },
+                icon: const Icon(Icons.notifications_outlined, color: Colors.black),
+                onPressed: () {},
               ),
             ],
             elevation: 0,
+            backgroundColor: Colors.white,
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.vertical(
+                bottom: Radius.circular(16),
+              ),
+            ),
           ),
-          body: KeyboardVisibilityBuilder(
-            builder: (context, isKeyboardVisible) {
-              this.isKeyboardVisible = isKeyboardVisible;
+          body: LayoutBuilder(
+            builder: (context, constraints) {
+              return KeyboardVisibilityBuilder(
+                builder: (context, isKeyboardVisible) {
+                  this.isKeyboardVisible = isKeyboardVisible;
 
-              return GestureDetector(
-                onTap: () {
-                  if (isDetailVisible) {
-                    _closeDetailBox();
-                  }
-                },
-                child: Stack(
-                  children: [
-                    Column(
+                  return GestureDetector(
+                    onTap: () {
+                      if (isDetailVisible) _closeDetailBox();
+                      setState(() {
+                        isSearchActive = false;
+                        _searchFocusNode.unfocus();
+                      });
+                    },
+                    child: Stack(
                       children: [
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: Column(
-                            children: [
-                              TextField(
-                                controller: _searchController,
-                                focusNode: _searchFocusNode,
-                                decoration: InputDecoration(
-                                  hintText: "Search",
-                                  prefixIcon: const Icon(Icons.search),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(30),
-                                    borderSide: BorderSide.none,
-                                  ),
-                                  fillColor: Colors.grey.shade200,
-                                  filled: true,
-                                ),
-                                onTap: () {
-                                  if (isDetailVisible) {
-                                    _closeDetailBox();
-                                  }
-                                  _searchFocusNode.requestFocus();
-                                  setState(() {
-                                    isSearchVisible = true;
-                                  });
-                                },
-                                onSubmitted:
-                                    _handleSearch, // Saat pengguna menekan enter
-                              ),
-                              const SizedBox(height: 20),
-                              if (!isSearchVisible && !isKeyboardVisible)
-                                SingleChildScrollView(
-                                  scrollDirection: Axis.horizontal,
-                                  child: Row(
-                                    children: [
-                                      _buildCategory(
-                                        "All",
-                                        selectedCategory == 'All',
-                                      ),
-                                      _buildCategory(
-                                        "Food",
-                                        selectedCategory == 'Food',
-                                      ),
-                                      _buildCategory(
-                                        "Drinks",
-                                        selectedCategory == 'Drinks',
-                                      ),
-                                      _buildCategory(
-                                        "Snack",
-                                        selectedCategory == 'Snack',
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              if (isSearchVisible) _buildSearchResults(),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        Expanded(
-                          child: RefreshIndicator(
-                            onRefresh: _refreshData,
-                            backgroundColor: Colors.white,
-                            color: Colors.blue,
-                            displacement: 50,
-                            strokeWidth: 3,
-                            child: ListView(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                              ),
+                        SingleChildScrollView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(
+                              minHeight: constraints.maxHeight,
+                            ),
+                            child: Column(
                               children: [
-                                const Text(
-                                  "Food for you",
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 16),
+                                  child: SearchWidget(
+                                    searchController: _searchController,
+                                    onSearchSubmitted: _handleSearch,
+                                    onFillSearchBar: _fillSearchBar,
+                                    onRemoveRecentSearch: _removeRecentSearch,
+                                    onFoodItemTap: _handleFoodItemTap,
+                                    isSearchActive: isSearchActive,
+                                    focusNode: _searchFocusNode,
+                                    categorySelector: CategorySelector(
+                                      selectedCategory: selectedCategory,
+                                      onCategorySelected: _onCategorySelected,
+                                    ),
+                                    showFoodLists: isSearchActive,
                                   ),
                                 ),
-                                const SizedBox(height: 20),
-                                _buildFoodList(),
-                                const SizedBox(height: 20),
-                                const Text(
-                                  "Order again",
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 20),
-                                _buildFoodList(),
-                                const SizedBox(height: 100),
+                                if (!isSearchActive && !isKeyboardVisible)
+                                  _buildMainContent(theme),
                               ],
                             ),
                           ),
                         ),
+                        
+                        // Semi-transparent overlay
+                        if (isDetailVisible)
+                          Positioned.fill(
+                            child: GestureDetector(
+                              onTap: _closeDetailBox,
+                              child: Container(
+                                color: Colors.black.withOpacity(0.4),
+                              ),
+                            ),
+                          ),
+
+                        // Improved DetailBox
+                        if (isDetailVisible)
+                          Positioned(
+                            bottom: 0,
+                            left: 0,
+                            right: 0,
+                            child: DetailBox(
+                              selectedFoodItem: selectedFoodItem,
+                              selectedFoodPrice: selectedFoodPrice,
+                              selectedFoodImgUrl: selectedFoodImgUrl,
+                              selectedFoodSubtitle: selectedFoodSubtitle,
+                              onAddToCart: () {
+                                final cartProvider = Provider.of<CartProvider>(
+                                  context,
+                                  listen: false,
+                                );
+                                cartProvider.addToCart(
+                                  CartItem(
+                                    name: selectedFoodItem,
+                                    price: int.parse(selectedFoodPrice.replaceAll(".", "")),
+                                    image: selectedFoodImgUrl,
+                                    subtitle: selectedFoodSubtitle,
+                                  ),
+                                );
+                                _closeDetailBox();
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      "$selectedFoodItem added to cart!",
+                                      style: const TextStyle(color: Colors.white),
+                                    ),
+                                    duration: const Duration(seconds: 2),
+                                    behavior: SnackBarBehavior.floating,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    backgroundColor: Colors.blue[800],
+                                  ),
+                                );
+                              },
+                              onAddToFavorites: () {
+                                final favoriteProvider = Provider.of<FavoriteProvider>(
+                                  context,
+                                  listen: false,
+                                );
+                                if (favoriteProvider.favoriteItems.any((item) => 
+                                    item.name == selectedFoodItem && 
+                                    item.image == selectedFoodImgUrl)) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        "$selectedFoodItem is already in your favorites",
+                                        style: const TextStyle(color: Colors.white),
+                                      ),
+                                      duration: const Duration(seconds: 2),
+                                      behavior: SnackBarBehavior.floating,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      backgroundColor: Colors.blue[800],
+                                    ),
+                                  );
+                                } else {
+                                  favoriteProvider.addToFavorites(
+                                    FavoriteItem(
+                                      name: selectedFoodItem,
+                                      price: selectedFoodPrice,
+                                      image: selectedFoodImgUrl,
+                                      subtitle: selectedFoodSubtitle,
+                                    ),
+                                  );
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: const Text(
+                                        "Added to favorites!",
+                                        style: TextStyle(color: Colors.white),
+                                      ),
+                                      duration: const Duration(seconds: 2),
+                                      behavior: SnackBarBehavior.floating,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      backgroundColor: Colors.blue[800],
+                                    ),
+                                  );
+                                }
+                              },
+                              onClose: _closeDetailBox,
+                            ),
+                          ),
                       ],
                     ),
-                    if (isDetailVisible)
-                      AnimatedPositioned(
-                        duration: const Duration(milliseconds: 300),
-                        bottom: 0,
-                        left: 0,
-                        right: 0,
-                        child: Material(
-                          elevation: 8,
-                          color: Colors.white,
-                          child: Container(
-                            padding: const EdgeInsets.all(16),
-                            width: double.infinity,
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(15),
-                                  child: Image.asset(
-                                    selectedFoodImgUrl,
-                                    height: 200,
-                                    width: double.infinity,
-                                    fit: BoxFit.cover,
-                                  ),
-                                ),
-                                const SizedBox(height: 10),
-                                Text(
-                                  selectedFoodItem,
-                                  style: const TextStyle(
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 5),
-                                Text(
-                                  "$selectedFoodPrice",
-                                  style: const TextStyle(fontSize: 18),
-                                ),
-                                const SizedBox(height: 10),
-                                ElevatedButton(
-                                  onPressed: () {
-                                    final cartProvider =
-                                        Provider.of<CartProvider>(
-                                          context,
-                                          listen: false,
-                                        );
-                                    cartProvider.addToCart(
-                                      CartItem(
-                                        name: selectedFoodItem,
-                                        price: int.parse(
-                                          selectedFoodPrice.replaceAll(".", ""),
-                                        ),
-                                        image: selectedFoodImgUrl,
-                                      ),
-                                    );
-                                    _closeDetailBox();
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                    minimumSize: const Size(
-                                      double.infinity,
-                                      50,
-                                    ),
-                                    backgroundColor: Colors.blue,
-                                    foregroundColor: Colors.white,
-                                  ),
-                                  child: const Text("Add to Cart"),
-                                ),
-                                const SizedBox(height: 10),
-                                Align(
-                                  alignment: Alignment.centerRight,
-                                  child: GestureDetector(
-                                    onTap: () {
-                                      final favoriteProvider =
-                                          Provider.of<FavoriteProvider>(
-                                            context,
-                                            listen: false,
-                                          );
-                                      favoriteProvider.addToFavorites(
-                                        FavoriteItem(
-                                          name: selectedFoodItem,
-                                          price: selectedFoodPrice,
-                                          image: selectedFoodImgUrl,
-                                        ),
-                                      );
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        const SnackBar(
-                                          content: Text("Added to favorites!"),
-                                        ),
-                                      );
-                                    },
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 12,
-                                        horizontal: 20,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        borderRadius: BorderRadius.circular(30),
-                                        border: Border.all(
-                                          color: Colors.black,
-                                          width: 1,
-                                        ),
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          const Icon(
-                                            Icons.favorite_border,
-                                            color: Colors.black,
-                                          ),
-                                          const SizedBox(width: 8),
-                                          const Text(
-                                            'Save',
-                                            style: TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.black,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
+                  );
+                },
               );
             },
           ),
-          floatingActionButtonLocation:
-              FloatingActionButtonLocation.centerDocked,
+          floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
           floatingActionButton: AnimatedPositioned(
             duration: const Duration(milliseconds: 300),
-            bottom:
-                isKeyboardVisible
-                    ? MediaQuery.of(context).viewInsets.bottom + 16
-                    : 0,
+            bottom: isKeyboardVisible
+                ? MediaQuery.of(context).viewInsets.bottom + 16
+                : 0,
             left: 0,
             right: 0,
             child: AnimatedOpacity(
@@ -432,190 +462,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           ),
         ),
       ),
-    );
-  }
-
-  void _onCategorySelected(String category) {
-    if (isDetailVisible) {
-      setState(() {
-        isDetailVisible = false;
-      });
-    }
-    setState(() {
-      selectedCategory = category;
-    });
-  }
-
-  void _closeDetailBox() {
-    setState(() {
-      isDetailVisible = false;
-    });
-    _boxController.reverse();
-    _navController.forward();
-  }
-
-  Widget _buildCategory(String title, bool isSelected) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: GestureDetector(
-        onTap: () => _onCategorySelected(title),
-        child: Column(
-          children: [
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: isSelected ? Colors.blue : Colors.grey.shade800,
-              ),
-            ),
-            if (isSelected)
-              Container(
-                margin: const EdgeInsets.only(top: 4),
-                height: 3,
-                width: 30,
-                color: Colors.blue,
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFoodList() {
-    final foodItems = FoodData.getFoodItems(selectedCategory);
-
-    return SizedBox(
-      height: 180,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        physics: const BouncingScrollPhysics(),
-        itemCount: foodItems.length,
-        itemBuilder: (context, index) {
-          return _buildFoodCard(
-            foodItems[index]["title"]!,
-            foodItems[index]["subtitle"]!,
-            foodItems[index]["time"]!,
-            foodItems[index]["imgUrl"]!,
-            foodItems[index]["price"]!,
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildFoodCard(
-    String title,
-    String subtitle,
-    String time,
-    String imgUrl,
-    String price,
-  ) {
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          selectedFoodItem = title;
-          selectedFoodPrice = price;
-          selectedFoodImgUrl = imgUrl;
-          isDetailVisible = true;
-          _boxController.forward();
-          _navController.reverse();
-        });
-      },
-      child: Container(
-        width: 160,
-        margin: const EdgeInsets.only(right: 10),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(15),
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.shade300,
-              blurRadius: 5,
-              spreadRadius: 2,
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ClipRRect(
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(15),
-              ),
-              child: Image.asset(
-                imgUrl,
-                height: 100,
-                width: 160,
-                fit: BoxFit.cover,
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  Text(subtitle, style: const TextStyle(color: Colors.grey)),
-                  Text(
-                    time,
-                    style: const TextStyle(color: Colors.blue, fontSize: 12),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSearchResults() {
-    final recentSearches = SearchData.getRecentSearches();
-    final popularCuisines = SearchData.getPopularCuisines();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          "Recent Searches",
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 10),
-        if (recentSearches.isEmpty) const Text("No recent searches"),
-        if (recentSearches.isNotEmpty)
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children:
-                recentSearches.map((search) {
-                  return Chip(
-                    label: Text(search),
-                    deleteIcon: const Icon(Icons.clear),
-                    onDeleted:
-                        () =>
-                            _removeRecentSearch(search), // Hapus saat x ditekan
-                  );
-                }).toList(),
-          ),
-        const SizedBox(height: 20),
-        const Text(
-          "Popular Cuisines",
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 10),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children:
-              popularCuisines.map((cuisine) {
-                return Chip(label: Text(cuisine));
-              }).toList(),
-        ),
-      ],
     );
   }
 }

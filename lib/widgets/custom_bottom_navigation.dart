@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_keyboard_visibility/flutter_keyboard_visibility.dart'; 
+import 'package:flutter_keyboard_visibility/flutter_keyboard_visibility.dart';
 import '../screens/home_screen.dart';
 import '../screens/my_orders_screen.dart';
 import '../screens/shopping_cart_screen.dart';
@@ -21,6 +21,8 @@ class CustomBottomNavigation extends StatefulWidget {
 
 class _CustomBottomNavigationState extends State<CustomBottomNavigation> {
   late int _currentIndex;
+  final Duration _animationDuration = const Duration(milliseconds: 300);
+  final Curve _animationCurve = Curves.easeOutQuad;
 
   @override
   void initState() {
@@ -28,18 +30,22 @@ class _CustomBottomNavigationState extends State<CustomBottomNavigation> {
     _currentIndex = widget.selectedIndex;
   }
 
-  void _onItemTapped(int index) {
-    if (index == _currentIndex) return;
-
+  void _navigateWithDirectionalSlide(int newIndex) {
+    final currentIndex = _currentIndex;
     setState(() {
-      _currentIndex = index;
+      _currentIndex = newIndex;
     });
 
     Future.delayed(Duration.zero, () {
       if (!mounted) return;
 
+      // Determine slide direction
+      final Offset begin = newIndex > currentIndex 
+          ? const Offset(1.0, 0.0)  // Slide from right to left
+          : const Offset(-1.0, 0.0); // Slide from left to right
+
       Widget nextPage;
-      switch (index) {
+      switch (newIndex) {
         case 0:
           nextPage = const HomeScreen();
           break;
@@ -60,10 +66,24 @@ class _CustomBottomNavigationState extends State<CustomBottomNavigation> {
       Navigator.pushReplacement(
         widget.context,
         PageRouteBuilder(
-          transitionDuration: const Duration(milliseconds: 500),
+          transitionDuration: const Duration(milliseconds: 400),
           pageBuilder: (context, animation, secondaryAnimation) => nextPage,
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            return FadeTransition(opacity: animation, child: child);
+            return SlideTransition(
+              position: Tween<Offset>(
+                begin: begin,
+                end: Offset.zero,
+              ).animate(CurvedAnimation(
+                parent: animation,
+                curve: Curves.easeInOutQuart,
+              )),
+              child: FadeTransition(
+                opacity: Tween<double>(begin: 0.5, end: 1.0).animate(
+                  CurvedAnimation(parent: animation, curve: Curves.easeInOut),
+                ),
+                child: child,
+              ),
+            );
           },
         ),
       );
@@ -74,44 +94,50 @@ class _CustomBottomNavigationState extends State<CustomBottomNavigation> {
   Widget build(BuildContext context) {
     return KeyboardVisibilityBuilder(
       builder: (context, isKeyboardVisible) {
-        return Visibility(
-          visible:
-              !isKeyboardVisible, // Sembunyikan bottom nav saat keyboard muncul
-          child: Align(
-            alignment: Alignment.bottomCenter,
-            child: Container(
-              margin: const EdgeInsets.only(
-                bottom: 20,
-              ), // Margin untuk efek floating
-              width:
-                  MediaQuery.of(context).size.width *
-                  0.9, // Lebar 90% dari layar
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(30),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 12,
-                    horizontal: 24,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.shade700,
-                    borderRadius: BorderRadius.circular(30),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      _buildNavItem(Icons.grid_view, 0),
-                      _buildNavItem(Icons.receipt_long, 1),
-                      _buildNavItem(Icons.shopping_cart, 2),
-                      _buildNavItem(Icons.person, 3),
-                    ],
+        return AnimatedContainer(
+          duration: _animationDuration,
+          curve: _animationCurve,
+          height: isKeyboardVisible ? 0 : 72,
+          child: AnimatedOpacity(
+            duration: _animationDuration,
+            curve: _animationCurve,
+            opacity: isKeyboardVisible ? 0 : 1,
+            child: Align(
+              alignment: Alignment.bottomCenter,
+              child: AnimatedContainer(
+                duration: _animationDuration,
+                curve: _animationCurve,
+                margin: EdgeInsets.only(
+                  bottom: isKeyboardVisible ? 0 : 20,
+                ),
+                width: MediaQuery.of(context).size.width * 0.9,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(30),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 12,
+                      horizontal: 24,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade700,
+                      borderRadius: BorderRadius.circular(30),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.2),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        _buildNavItem(Icons.grid_view, 0),
+                        _buildNavItem(Icons.receipt_long, 1),
+                        _buildNavItem(Icons.shopping_cart, 2),
+                        _buildNavItem(Icons.person, 3),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -124,11 +150,14 @@ class _CustomBottomNavigationState extends State<CustomBottomNavigation> {
 
   Widget _buildNavItem(IconData icon, int index) {
     return GestureDetector(
-      onTap: () => _onItemTapped(index),
-      child: Icon(
-        icon,
-        color: _currentIndex == index ? Colors.white : Colors.white70,
-        size: 28,
+      onTap: () => _navigateWithDirectionalSlide(index),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        child: Icon(
+          icon,
+          color: _currentIndex == index ? Colors.white : Colors.white70,
+          size: 28,
+        ),
       ),
     );
   }

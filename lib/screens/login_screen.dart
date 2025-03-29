@@ -1,164 +1,267 @@
 import 'package:flutter/material.dart';
-import 'home_screen.dart'; // Import file HomeScreen
+import 'package:my_app/auth/auth_service.dart';
+import 'package:my_app/screens/seller_home.dart';
+import 'package:provider/provider.dart';
+import '../auth/auth_provider.dart';
+import 'home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
-  final String userType;
-
-  const LoginScreen({super.key, required this.userType});
+  const LoginScreen({super.key});
 
   @override
   _LoginScreenState createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
-  bool rememberMe = false; // Menyimpan status "Remember Me"
+class _LoginScreenState extends State<LoginScreen>
+    with SingleTickerProviderStateMixin {
+  final _formKey = GlobalKey<FormState>();
+  bool rememberMe = false;
+  bool _obscurePassword = true;
+  bool _isLoading = false;
+  late AnimationController _animationController;
+  late Animation<double> _opacityAnimation;
+
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+    _opacityAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
+    _animationController.forward();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+Future<void> _handleLogin() async {
+  if (!_formKey.currentState!.validate()) return;
+
+  setState(() => _isLoading = true);
+
+  final authProvider = Provider.of<AuthProvider>(context, listen: false);
+  final authService = Provider.of<AuthService>(context, listen: false);
+
+  final user = await authService.login(
+    _emailController.text.trim(),
+    _passwordController.text.trim(),
+  );
+
+  if (!mounted) return;
+
+  setState(() => _isLoading = false);
+
+  if (user != null) {
+    final success = await authProvider.login(
+      user.email,
+      user.password,
+      user.name,
+      user.userType,
+    );
+
+    if (success) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (context) => user.userType == 'seller' 
+              ? const SellerHomeScreen() 
+              : const HomeScreen(),
+        ),
+      );
+    }
+  } else {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Login failed. Invalid credentials.'),
+        backgroundColor: Colors.red,
+        behavior: SnackBarBehavior.floating,
+        margin: EdgeInsets.all(20),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(10)),
+      ),
+      )
+    );
+  }
+}
+
+  String? _validateEmail(String? value) {
+  if (value == null || value.isEmpty) {
+    return 'Email is required';
+  }
+  if (!value.endsWith('@student.umn.ac.id') &&
+      !value.endsWith('@seller.umn.ac.id') &&
+      !value.endsWith('@umn.ac.id') &&
+      !value.endsWith('@lecturer.umn.ac.id')) {
+    return 'Email invalid';
+  }
+  return null;
+}
+
+String? _validatePassword(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Password is required';
+    }
+    return null;
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back, color: Colors.blue),
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Spacer(),
-            const Text(
-              'Login',
-              style: TextStyle(
-                fontSize: 32,
-                fontWeight: FontWeight.bold,
-                color: Colors.blue,
-              ),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 32),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 40),
+                FadeTransition(
+                  opacity: _opacityAnimation,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Login',
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'UMN Canteen Management',
+                        style: TextStyle(fontSize: 16, color: Colors.grey),
+                      ),
+                      const SizedBox(height: 16),
+                      // Login type indicator
+                      Container(padding: const EdgeInsets.all(8)),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 40),
+                _buildLoginForm(),
+                const SizedBox(height: 20),
+              ],
             ),
-            Text(
-              'Welcome to UMN Canteen',
-              style: const TextStyle(fontSize: 16, color: Colors.grey),
-            ),
-            const SizedBox(height: 80),
-            _buildLoginForm(),
-            const Spacer(),
-          ],
+          ),
         ),
       ),
     );
   }
 
   Widget _buildLoginForm() {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(
-        16,
-        40,
-        16,
-        16,
-      ), // Tambahkan padding atas (30px)
-      decoration: BoxDecoration(
-        color: Colors.blue.shade600,
-        borderRadius: BorderRadius.circular(30),
-      ),
-      child: Column(
-        children: [
-          TextField(
-            decoration: InputDecoration(
-              filled: true,
-              fillColor: Colors.white,
-              hintText: 'Email',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(30),
-              ),
+    return FadeTransition(
+      opacity: _opacityAnimation,
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.blue.withOpacity(0.1),
+              blurRadius: 20,
+              spreadRadius: 2,
+              offset: const Offset(0, 10),
             ),
-          ),
-          const SizedBox(height: 20),
-          TextField(
-            obscureText: true,
-            decoration: InputDecoration(
-              filled: true,
-              fillColor: Colors.white,
-              hintText: 'Password',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(30),
+          ],
+        ),
+        child: Column(
+          children: [
+            TextFormField(
+              controller: _emailController,
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: Colors.grey[50],
+                hintText: 'Email',
+                prefixIcon: const Icon(Icons.email, color: Colors.blue),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                contentPadding: const EdgeInsets.symmetric(vertical: 16),
               ),
+              keyboardType: TextInputType.emailAddress,
+              validator: _validateEmail,
+              onChanged: (value) => setState(() {}),
             ),
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Checkbox(
-                value: rememberMe,
-                onChanged: (bool? newValue) {
-                  setState(() {
-                    rememberMe = newValue!;
-                  });
-                },
-                activeColor: Colors.white, // Warna checkbox aktif
-                checkColor: Colors.blue, // Warna centang
-              ),
-              const Text(
-                "Remember Me",
-                style: TextStyle(color: Colors.white, fontSize: 14),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pushReplacement(
-                context,
-                PageRouteBuilder(
-                  transitionDuration: const Duration(
-                    milliseconds: 500,
-                  ), // Durasi animasi 0.5 detik
-                  pageBuilder:
-                      (context, animation, secondaryAnimation) =>
-                          const HomeScreen(),
-                  transitionsBuilder: (
-                    context,
-                    animation,
-                    secondaryAnimation,
-                    child,
-                  ) {
-                    const begin = Offset(0.0, 1.0); // Mulai dari bawah
-                    const end = Offset.zero; // Berhenti di posisi normal
-                    const curve = Curves.easeInOut; // Animasi lebih smooth
+            const SizedBox(height: 20),
 
-                    var tween = Tween(
-                      begin: begin,
-                      end: end,
-                    ).chain(CurveTween(curve: curve));
-                    var fadeTween = Tween<double>(
-                      begin: 0.0,
-                      end: 1.0,
-                    ).chain(CurveTween(curve: curve));
-
-                    return FadeTransition(
-                      opacity: animation.drive(fadeTween),
-                      child: SlideTransition(
-                        position: animation.drive(tween),
-                        child: child,
-                      ),
-                    );
+            TextFormField(
+              controller: _passwordController,
+              obscureText: _obscurePassword,
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: Colors.grey[50],
+                hintText: 'Password',
+                prefixIcon: const Icon(Icons.lock, color: Colors.blue),
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                    color: Colors.blue,
+                  ),
+                  onPressed: () {
+                    setState(() => _obscurePassword = !_obscurePassword);
                   },
                 ),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(30),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                contentPadding: const EdgeInsets.symmetric(vertical: 16),
               ),
-              minimumSize: const Size(200, 50), // Lebar tombol dikurangi
+              validator: _validatePassword,
             ),
-            child: const Text(
-              'Login',
-              style: TextStyle(color: Colors.blue, fontSize: 18),
+            const SizedBox(height: 20),
+
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton(
+                onPressed: _isLoading ? null : _handleLogin,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 0,
+                ),
+                child:
+                    _isLoading
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : const Text(
+                          'LOGIN',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

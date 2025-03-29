@@ -1,7 +1,13 @@
+// lib/screens/my_orders_screen.dart
 import 'package:flutter/material.dart';
-import '../widgets/custom_bottom_navigation.dart'; // Import Bottom Navigation
-import 'home_screen.dart'; // Make sure to import the HomeScreen
-import 'package:flutter_keyboard_visibility/flutter_keyboard_visibility.dart'; // Import the keyboard visibility package
+import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import 'package:lottie/lottie.dart';
+import '../widgets/custom_bottom_navigation.dart';
+import '../providers/order_provider.dart';
+import '../models/order_model.dart';
+import 'home_screen.dart';
+import 'package:flutter_keyboard_visibility/flutter_keyboard_visibility.dart';
 
 class MyOrdersScreen extends StatefulWidget {
   const MyOrdersScreen({super.key});
@@ -11,9 +17,8 @@ class MyOrdersScreen extends StatefulWidget {
 }
 
 class _MyOrdersScreenState extends State<MyOrdersScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late TabController _tabController;
-  bool isKeyboardVisible = false; // Track if the keyboard is visible
 
   @override
   void initState() {
@@ -23,117 +28,249 @@ class _MyOrdersScreenState extends State<MyOrdersScreen>
 
   @override
   void dispose() {
-    if (mounted) {
-      _tabController.dispose();
-    }
+    _tabController.dispose();
     super.dispose();
-  }
-
-  Future<bool> _onWillPop() async {
-    // Navigate to HomeScreen when hardware back button is pressed
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const HomeScreen()),
-    );
-    return Future.value(false); // Prevent the default back action
   }
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: _onWillPop, // Override the back button behavior
-      child: KeyboardVisibilityBuilder(
-        builder: (context, isKeyboardVisible) {
-          this.isKeyboardVisible =
-              isKeyboardVisible; // Update the keyboard visibility state
+    final orderProvider = Provider.of<OrderProvider>(context);
+    final ongoingOrders = orderProvider.ongoingOrders;
+    final completedOrders = orderProvider.completedOrders;
 
-          return Scaffold(
-            appBar: AppBar(
-              title: const Text(
-                'My Orders',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-              centerTitle: true,
-              leading: IconButton(
-                icon: const Icon(Icons.arrow_back),
-                onPressed: () {
-                  // Navigate to HomeScreen when back arrow is pressed
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (context) => const HomeScreen()),
-                  );
-                },
-              ),
-              bottom: TabBar(
-                controller: _tabController,
-                labelColor: Colors.blue,
-                unselectedLabelColor: Colors.black,
-                indicatorColor: Colors.blue,
-                tabs: const [Tab(text: "Ongoing"), Tab(text: "History")],
-              ),
+    return WillPopScope(
+      onWillPop: () async {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const HomeScreen()),
+        );
+        return false;
+      },
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        appBar: AppBar(
+          title: const Text(
+            'My Orders',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.black,
             ),
-            body: TabBarView(
-              controller: _tabController,
-              children: [_buildOngoingOrders(), _buildHistoryOrders()],
-            ),
-            floatingActionButtonLocation:
-                FloatingActionButtonLocation.centerDocked,
-            floatingActionButton: CustomBottomNavigation(
-              selectedIndex:
-                  1, // Set to the correct selected index for MyOrdersScreen
-              context: context,
-            ),
-          );
-        },
+          ),
+          centerTitle: true,
+          backgroundColor: Colors.white,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.black),
+            onPressed: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const HomeScreen()),
+              );
+            },
+          ),
+          bottom: TabBar(
+            controller: _tabController,
+            labelColor: Colors.blue,
+            unselectedLabelColor: Colors.black,
+            indicatorColor: Colors.blue,
+            tabs: const [Tab(text: "Ongoing"), Tab(text: "History")],
+          ),
+        ),
+        body: TabBarView(
+          controller: _tabController,
+          children: [
+            _buildOrderList(ongoingOrders, "Ongoing"),
+            _buildOrderList(completedOrders, "History"),
+          ],
+        ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+        floatingActionButton: CustomBottomNavigation(
+          selectedIndex: 1,
+          context: context,
+        ),
       ),
     );
   }
 
-  Widget _buildOngoingOrders() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+  Widget _buildOrderList(List<Order> orders, String type) {
+    if (orders.isEmpty) {
+      return _buildEmptyOrderView(type);
+    }
+
+    return RefreshIndicator(
+      onRefresh: () async {
+        // Could implement refresh logic here if needed
+        await Future.delayed(const Duration(seconds: 1));
+      },
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: orders.length,
+        itemBuilder: (context, index) => _buildOrderCard(orders[index]),
+      ),
+    );
+  }
+
+  Widget _buildOrderCard(Order order) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Order #${order.id}',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                Chip(
+                  label: Text(
+                    order.status.toUpperCase(),
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                  backgroundColor: order.status == 'ongoing' 
+                      ? Colors.orange[100]
+                      : Colors.green[100],
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Merchant: ${order.merchantName}',
+              style: TextStyle(color: Colors.grey[600]),
+            ),
+            Text(
+              'Pickup: ${DateFormat('dd MMM yyyy, HH:mm').format(order.pickupTime)}',
+              style: TextStyle(color: Colors.grey[600]),
+            ),
+            Text(
+              'Paid with ${order.paymentMethod}',
+              style: TextStyle(color: Colors.grey[600]),
+            ),
+            const Divider(height: 24),
+            ...order.items.map((item) => _buildOrderItem(item)).toList(),
+            const Divider(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('TOTAL', style: TextStyle(fontWeight: FontWeight.bold)),
+                Text(
+                  NumberFormat.currency(symbol: 'Rp ', decimalDigits: 0)
+                      .format(order.totalPrice),
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOrderItem(OrderItem item) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
         children: [
-          SizedBox(
-            height: 150,
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
             child: Image.asset(
-              'assets/asset/no_orders.png',
-              errorBuilder: (context, error, stackTrace) {
-                return Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.image_not_supported,
-                      size: 80,
-                      color: Colors.grey,
-                    ),
-                    const SizedBox(height: 10),
-                    const Text(
-                      "Image not found",
-                      style: TextStyle(color: Colors.grey, fontSize: 14),
-                    ),
-                  ],
-                );
-              },
+              item.image,
+              width: 50,
+              height: 50,
+              fit: BoxFit.cover,
             ),
           ),
-          const SizedBox(height: 20),
-          const Text(
-            "Have you ordered?",
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(item.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                Text(item.subtitle, style: TextStyle(color: Colors.grey[600])),
+              ],
+            ),
           ),
-          const SizedBox(height: 8),
-          const Text(
-            "Confirmed items which are currently being prepared will show up here, so you can track your food!",
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 14, color: Colors.grey),
-          ),
+          Text('${item.quantity}x'),
+          const SizedBox(width: 12),
+          Text(NumberFormat.currency(symbol: 'Rp ', decimalDigits: 0).format(item.price)),
         ],
       ),
     );
   }
 
-  Widget _buildHistoryOrders() {
-    return Center(child: const Text("No order history available."));
+  Widget _buildEmptyOrderView(String type) {
+    return Center(
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Lottie.asset(
+                'assets/animation/empty_order.json',
+                width: 250,
+                height: 250,
+                fit: BoxFit.contain,
+              ),
+              const SizedBox(height: 20),
+              Text(
+                type == "Ongoing" ? "No Active Orders" : "No Order History",
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Text(
+                  type == "Ongoing"
+                      ? "Your ongoing orders will appear here once you place an order"
+                      : "Your completed orders will appear here for future reference",
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    color: Colors.black54,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 30),
+              ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (context) => const HomeScreen()),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
+                ),
+                icon: const Icon(Icons.shopping_bag, color: Colors.white),
+                label: const Text(
+                  "Order Now",
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
