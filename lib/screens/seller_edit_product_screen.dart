@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:my_app/auth/auth_provider.dart';
+import 'package:my_app/providers/food_provider.dart';
 import 'package:my_app/models/product_model.dart';
 import 'dart:io';
 
@@ -11,7 +12,7 @@ class SellerEditProductScreen extends StatefulWidget {
   const SellerEditProductScreen({super.key, this.product});
 
   @override
-  _SellerEditProductScreenState createState() => _SellerEditProductScreenState();
+  State<SellerEditProductScreen> createState() => _SellerEditProductScreenState();
 }
 
 class _SellerEditProductScreenState extends State<SellerEditProductScreen> {
@@ -42,6 +43,31 @@ class _SellerEditProductScreenState extends State<SellerEditProductScreen> {
       setState(() {
         _imageFile = File(pickedFile.path);
       });
+    }
+  }
+
+  Future<void> _saveProduct() async {
+    if (_formKey.currentState!.validate()) {
+      final foodProvider = Provider.of<FoodProvider>(context, listen: false);
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+
+      final product = Product(
+        id: widget.product?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+        title: _nameController.text,
+        subtitle: _tenantName,
+        price: _priceController.text,
+        time: '$_preparationTime mins',
+        imgUrl: _imageFile?.path ?? widget.product?.imgUrl ?? 'assets/default.jpg',
+        sellerEmail: authProvider.user?.email ?? '', String: null,
+      );
+
+      if (widget.product == null) {
+        await foodProvider.addProduct(product);
+      } else {
+        await foodProvider.updateProduct(product);
+      }
+
+      if (mounted) Navigator.pop(context);
     }
   }
 
@@ -92,7 +118,6 @@ class _SellerEditProductScreenState extends State<SellerEditProductScreen> {
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: Colors.black87,
                         ),
                       ),
                     ),
@@ -101,14 +126,10 @@ class _SellerEditProductScreenState extends State<SellerEditProductScreen> {
                       onTap: _pickImage,
                       child: Container(
                         height: 160,
-                        width: double.infinity,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(12),
-                          color: Colors.grey.shade50,
-                          border: Border.all(
-                            color: Colors.grey.shade200,
-                            width: 1.5,
-                          ),
+                          color: Colors.grey.shade100,
+                          border: Border.all(color: Colors.grey.shade300),
                         ),
                         child: _imageFile != null
                             ? ClipRRect(
@@ -130,7 +151,7 @@ class _SellerEditProductScreenState extends State<SellerEditProductScreen> {
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
                                       Icon(
-                                        Icons.add_photo_alternate_outlined,
+                                        Icons.add_a_photo,
                                         size: 40,
                                         color: Colors.grey.shade400,
                                       ),
@@ -155,28 +176,23 @@ class _SellerEditProductScreenState extends State<SellerEditProductScreen> {
                 title: 'Product Name',
                 child: TextFormField(
                   controller: _nameController,
-                  style: const TextStyle(fontSize: 16),
                   decoration: const InputDecoration(
-                    hintText: 'e.g. Nasi Goreng Special',
+                    hintText: 'Enter product name',
                     border: InputBorder.none,
-                    contentPadding: EdgeInsets.zero,
                   ),
-                  validator: (value) => value!.isEmpty ? 'Required' : null,
+                  validator: (value) => value?.isEmpty ?? true ? 'Required' : null,
                 ),
               ),
               const SizedBox(height: 20),
 
-              // Tenant Name (non-editable)
+              // Tenant Name
               _buildInputSection(
                 title: 'Tenant',
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   child: Text(
                     _tenantName,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      color: Colors.black87,
-                    ),
+                    style: const TextStyle(fontSize: 16),
                   ),
                 ),
               ),
@@ -188,14 +204,12 @@ class _SellerEditProductScreenState extends State<SellerEditProductScreen> {
                 child: TextFormField(
                   controller: _priceController,
                   keyboardType: TextInputType.number,
-                  style: const TextStyle(fontSize: 16),
                   decoration: const InputDecoration(
-                    hintText: 'e.g. 25000',
+                    hintText: 'Enter price',
                     prefixText: 'Rp ',
                     border: InputBorder.none,
-                    contentPadding: EdgeInsets.zero,
                   ),
-                  validator: (value) => value!.isEmpty ? 'Required' : null,
+                  validator: (value) => value?.isEmpty ?? true ? 'Required' : null,
                 ),
               ),
               const SizedBox(height: 20),
@@ -205,7 +219,6 @@ class _SellerEditProductScreenState extends State<SellerEditProductScreen> {
                 title: 'Preparation Time',
                 child: Column(
                   children: [
-                    const SizedBox(height: 8),
                     Text(
                       '$_preparationTime mins',
                       style: const TextStyle(
@@ -214,37 +227,16 @@ class _SellerEditProductScreenState extends State<SellerEditProductScreen> {
                         color: Colors.blue,
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      height: 100,
-                      child: ListWheelScrollView(
-                        itemExtent: 40,
-                        perspective: 0.01,
-                        diameterRatio: 1.8,
-                        physics: const FixedExtentScrollPhysics(),
-                        onSelectedItemChanged: (index) {
-                          setState(() {
-                            _preparationTime = index + 1;
-                          });
-                        },
-                        children: List.generate(30, (index) {
-                          final minutes = index + 1;
-                          return Center(
-                            child: Text(
-                              '$minutes mins',
-                              style: TextStyle(
-                                fontSize: minutes == _preparationTime ? 20 : 16,
-                                color: minutes == _preparationTime
-                                    ? Colors.blue
-                                    : Colors.grey.shade600,
-                                fontWeight: minutes == _preparationTime
-                                    ? FontWeight.bold
-                                    : FontWeight.normal,
-                              ),
-                            ),
-                          );
-                        }),
-                      ),
+                    Slider(
+                      value: _preparationTime.toDouble(),
+                      min: 1,
+                      max: 30,
+                      divisions: 29,
+                      onChanged: (value) {
+                        setState(() {
+                          _preparationTime = value.toInt();
+                        });
+                      },
                     ),
                   ],
                 ),
@@ -252,26 +244,15 @@ class _SellerEditProductScreenState extends State<SellerEditProductScreen> {
               const SizedBox(height: 32),
 
               // Save Button
-              SizedBox(
-                height: 50,
-                child: ElevatedButton(
-                  onPressed: _saveProduct,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: const Text(
-                    'SAVE PRODUCT',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
+              ElevatedButton(
+                onPressed: _saveProduct,
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
                 ),
+                child: const Text('SAVE PRODUCT'),
               ),
             ],
           ),
@@ -312,22 +293,6 @@ class _SellerEditProductScreenState extends State<SellerEditProductScreen> {
         ),
       ],
     );
-  }
-
-  void _saveProduct() {
-    if (_formKey.currentState!.validate()) {
-      final product = Product(
-        id: widget.product?.id ?? DateTime.now().toString(),
-        title: _nameController.text,
-        subtitle: _tenantName, // Using tenant name as subtitle
-        price: _priceController.text,
-        time: '$_preparationTime mins',
-        imgUrl: _imageFile?.path ?? widget.product?.imgUrl ?? '',
-        sellerEmail: widget.product?.sellerEmail ?? '', String: null,
-      );
-
-      Navigator.pop(context, product);
-    }
   }
 
   @override

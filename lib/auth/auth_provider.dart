@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:my_app/providers/food_provider.dart';
+import 'package:path/path.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthProvider with ChangeNotifier {
@@ -70,8 +73,11 @@ class AuthProvider with ChangeNotifier {
     await _prefs.remove('user_name');
     await _prefs.remove('user_type');
 
-    _user = null;
-    notifyListeners();
+    final foodProvider = Provider.of<FoodProvider>(context as BuildContext, listen: false);
+  foodProvider.clearProducts();
+
+  _user = null;
+  notifyListeners();
   }
 }
 

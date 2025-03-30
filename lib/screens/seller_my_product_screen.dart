@@ -1,24 +1,34 @@
 import 'package:flutter/material.dart';
 import 'package:my_app/screens/seller_edit_product_screen.dart';
+import 'package:provider/provider.dart';
+import 'package:my_app/providers/food_provider.dart';
+import 'package:my_app/auth/auth_provider.dart';
 import 'package:my_app/screens/seller_home.dart';
 import 'package:my_app/widgets/seller_custom_bottom_navigation.dart';
-import 'package:my_app/data/food_data.dart';
-import 'package:provider/provider.dart';
-import 'package:my_app/auth/auth_provider.dart';
-import 'package:my_app/models/product_model.dart'; // Import your Product model
+import 'package:my_app/models/product_model.dart';
 
-class SellerMyProductScreen extends StatelessWidget {
+class SellerMyProductScreen extends StatefulWidget {
   const SellerMyProductScreen({super.key});
+
+  @override
+  State<SellerMyProductScreen> createState() => _SellerMyProductScreenState();
+}
+
+class _SellerMyProductScreenState extends State<SellerMyProductScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<FoodProvider>(context, listen: false).loadInitialData();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
+    final foodProvider = Provider.of<FoodProvider>(context);
     final currentSellerEmail = authProvider.user?.email;
-
-    final List<Map<String, String>> allFoodItems = FoodData.getFoodItems('All');
-    final List<Map<String, String>> sellerFoodItems = allFoodItems.where((item) {
-      return item['sellerEmail'] == currentSellerEmail;
-    }).toList();
+    final sellerProducts = foodProvider.getProductsBySeller(currentSellerEmail ?? '');
 
     return WillPopScope(
       onWillPop: () async {
@@ -29,10 +39,15 @@ class SellerMyProductScreen extends StatelessWidget {
         return false;
       },
       child: Scaffold(
+        backgroundColor: Colors.white, // Background scaffold putih
         appBar: AppBar(
-          title: const Text('My Product', style: TextStyle(color: Colors.black)),
+          title: const Text('My Products', 
+              style: TextStyle(color: Colors.black87)), // Text hitam
+          backgroundColor: Colors.white, // AppBar putih
+          elevation: 0.5, // Sedikit shadow untuk delineasi
+          iconTheme: const IconThemeData(color: Colors.black87), // Icon hitam
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.black),
+            icon: const Icon(Icons.arrow_back),
             onPressed: () {
               Navigator.pushReplacement(
                 context,
@@ -42,7 +57,7 @@ class SellerMyProductScreen extends StatelessWidget {
           ),
           actions: [
             IconButton(
-              icon: const Icon(Icons.add, color: Colors.black),
+              icon: const Icon(Icons.add),
               onPressed: () {
                 Navigator.push(
                   context,
@@ -53,52 +68,13 @@ class SellerMyProductScreen extends StatelessWidget {
               },
             ),
           ],
-          backgroundColor: Colors.white,
-          elevation: 1,
         ),
-        backgroundColor: Colors.white,
         body: Stack(
           children: [
+            // Background putih sudah di Scaffold
             Padding(
-              padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 80.0),
-              child: sellerFoodItems.isEmpty
-                  ? const Center(child: Text('No products found. Add your first product!'))
-                  : ListView.builder(
-                      itemCount: sellerFoodItems.length,
-                      itemBuilder: (context, index) {
-                        final item = sellerFoodItems[index];
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 8.0),
-                          child: _buildProductCard(
-                            imageUrl: item['imgUrl']!,
-                            productName: item['title']!,
-                            productSubtitle: item['subtitle']!,
-                            productPrice: 'Rp${item['price']}',
-                            preparationTime: item['time']!,
-                            onEdit: () {
-                              // Convert the Map to Product before passing
-                              final product = Product(
-                                id: index.toString(), // or generate a proper ID
-                                title: item['title']!,
-                                subtitle: item['subtitle']!,
-                                time: item['time']!,
-                                imgUrl: item['imgUrl']!,
-                                price: item['price']!,
-                                sellerEmail: item['sellerEmail']!, String: null,
-                              );
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => SellerEditProductScreen(
-                                    product: product,
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        );
-                      },
-                    ),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
+              child: _buildContent(foodProvider, sellerProducts),
             ),
             Positioned(
               bottom: 0,
@@ -115,103 +91,170 @@ class SellerMyProductScreen extends StatelessWidget {
     );
   }
 
-Widget _buildProductCard({
-    required String imageUrl,
-    required String productName,
-    required String productSubtitle,
-    required String productPrice,
-    required String preparationTime,
-    required VoidCallback onEdit, // Add this parameter
-  }) {
-    return Card(
-      elevation: 2,
-      color: Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+  Widget _buildContent(FoodProvider foodProvider, List<Product> sellerProducts) {
+    if (foodProvider.isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(Colors.black87),
+        ),
+      );
+    }
+
+    if (sellerProducts.isEmpty) {
+      return Center(
+        child: Text(
+          'No products found. Add your first product!',
+          style: TextStyle(
+            color: Colors.grey.shade600,
+            fontSize: 16,
+          ),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      physics: const BouncingScrollPhysics(),
+      itemCount: sellerProducts.length,
+      itemBuilder: (context, index) {
+        final product = sellerProducts[index];
+        return _ProductCard(
+          product: product,
+          onEdit: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => SellerEditProductScreen(
+                  product: product,
+                ),
+              ),
+            );
+          },
+          onDelete: () {
+            foodProvider.removeProduct(product.id);
+          },
+        );
+      },
+    );
+  }
+}
+
+class _ProductCard extends StatelessWidget {
+  final Product product;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+
+  const _ProductCard({
+    required this.product,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(12.0),
+        padding: const EdgeInsets.all(12),
         child: Row(
           children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: Image.asset(
-                imageUrl,
-                width: 80,
-                height: 80,
-                fit: BoxFit.cover,
+            // Product Image
+            Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.grey.shade200),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.asset(
+                  product.imgUrl,
+                  width: 80,
+                  height: 80,
+                  fit: BoxFit.cover,
+                ),
               ),
             ),
             const SizedBox(width: 12),
+            // Product Info
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    productName,
+                    product.title,
                     style: const TextStyle(
                       fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
                     ),
                   ),
+                  const SizedBox(height: 2),
                   Text(
-                    productSubtitle,
-                    style: const TextStyle(fontSize: 14, color: Colors.black54),
+                    product.subtitle,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey.shade600,
+                    ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 6),
                   Text(
-                    productPrice,
+                    'Rp${product.price}',
                     style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
                       color: Colors.green,
                     ),
+                  ),
+                  const SizedBox(height: 2),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.access_time,
+                        size: 14,
+                        color: Colors.grey.shade500,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        product.time,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
+            // Action Buttons
             Column(
               children: [
-                _buildPreparationTime(preparationTime),
-                const SizedBox(height: 8),
                 IconButton(
-                  icon: const Icon(Icons.edit, color: Colors.blue),
-                  onPressed: onEdit, // Use the onEdit callback here
+                  icon: Icon(Icons.edit, 
+                      color: Colors.blue.shade600),
+                  onPressed: onEdit,
+                ),
+                IconButton(
+                  icon: Icon(Icons.delete, 
+                      color: Colors.red.shade600),
+                  onPressed: onDelete,
                 ),
               ],
             ),
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildPreparationTime(String time) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: Colors.grey[200],
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.access_time, size: 14, color: Colors.black54),
-          const SizedBox(width: 4),
-          Text(
-            time,
-            style: const TextStyle(fontSize: 12, color: Colors.black54),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEditButton() {
-    return IconButton(
-      icon: const Icon(Icons.edit, color: Colors.blue),
-      onPressed: () {
-        // Handle the action of editing the product
-      },
     );
   }
 }
