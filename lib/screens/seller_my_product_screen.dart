@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:my_app/screens/seller_home.dart';
 import 'package:my_app/widgets/seller_custom_bottom_navigation.dart';
 import 'package:my_app/data/food_data.dart';
@@ -9,6 +8,7 @@ class SellerMyProductScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Get all food items (you can change 'All' to specific category if needed)
     final List<Map<String, String>> foodItems = FoodData.getFoodItems('All');
 
     return WillPopScope(
@@ -21,35 +21,31 @@ class SellerMyProductScreen extends StatelessWidget {
       },
       child: Scaffold(
         appBar: AppBar(
-          backgroundColor: Colors.white,
-          elevation: 0,
-          centerTitle: true,
           title: const Text(
             'My Product',
-            style: TextStyle(
-              color: Colors.black,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(color: Colors.black),
           ),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back, color: Colors.black),
             onPressed: () {
               Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(builder: (context) => const SellerHomeScreen()),
+                MaterialPageRoute(
+                  builder: (context) => const SellerHomeScreen(),
+                ),
               );
             },
           ),
           actions: [
             IconButton(
-              icon: const Icon(Icons.add, color: Colors.black, size: 26),
+              icon: const Icon(Icons.add, color: Colors.black),
               onPressed: () {
                 // Handle the action of adding a product
               },
             ),
           ],
-          systemOverlayStyle: SystemUiOverlayStyle.dark,
+          backgroundColor: Colors.white,
+          elevation: 1,
         ),
         backgroundColor: Colors.white,
         body: Stack(
@@ -61,7 +57,7 @@ class SellerMyProductScreen extends StatelessWidget {
                 itemBuilder: (context, index) {
                   final item = foodItems[index];
                   return Padding(
-                    padding: const EdgeInsets.only(bottom: 12.0),
+                    padding: const EdgeInsets.only(bottom: 8.0),
                     child: _buildProductCard(
                       imageUrl: item['imgUrl']!,
                       productName: item['title']!,
@@ -96,12 +92,9 @@ class SellerMyProductScreen extends StatelessWidget {
     required String preparationTime,
   }) {
     return Card(
-      elevation: 0,
+      elevation: 2,
       color: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey.shade200, width: 1),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       child: Padding(
         padding: const EdgeInsets.all(12.0),
         child: Row(
@@ -113,12 +106,6 @@ class SellerMyProductScreen extends StatelessWidget {
                 width: 80,
                 height: 80,
                 fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => Container(
-                  width: 80,
-                  height: 80,
-                  color: Colors.grey.shade100,
-                  child: const Icon(Icons.fastfood, color: Colors.grey),
-                ),
               ),
             ),
             const SizedBox(width: 12),
@@ -134,21 +121,17 @@ class SellerMyProductScreen extends StatelessWidget {
                       color: Colors.black,
                     ),
                   ),
-                  const SizedBox(height: 4),
                   Text(
                     productSubtitle,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey.shade600,
-                    ),
+                    style: const TextStyle(fontSize: 14, color: Colors.black54),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 4),
                   Text(
                     productPrice,
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black,
+                      color: Colors.green,
                     ),
                   ),
                 ],
@@ -156,40 +139,44 @@ class SellerMyProductScreen extends StatelessWidget {
             ),
             Column(
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.access_time, 
-                          size: 14, 
-                          color: Colors.grey.shade600),
-                      const SizedBox(width: 4),
-                      Text(
-                        preparationTime,
-                        style: TextStyle(
-                          fontSize: 12, 
-                          color: Colors.grey.shade600),
-                      ),
-                    ],
-                  ),
-                ),
+                _buildPreparationTime(preparationTime),
                 const SizedBox(height: 8),
-                IconButton(
-                  icon: const Icon(Icons.edit, color: Colors.blue),
-                  onPressed: () {
-                    // Handle the action of editing the product
-                  },
-                ),
+                _buildEditButton(),
               ],
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildPreparationTime(String time) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.grey[200],
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.access_time, size: 14, color: Colors.black54),
+          const SizedBox(width: 4),
+          Text(
+            time,
+            style: const TextStyle(fontSize: 12, color: Colors.black54),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEditButton() {
+    return IconButton(
+      icon: const Icon(Icons.edit, color: Colors.blue),
+      onPressed: () {
+        // Handle the action of editing the product
+      },
     );
   }
 }

@@ -21,7 +21,7 @@ class AuthService {
     User(
       email: '456@seller.umn.ac.id',
       password: '456',
-      name: 'Restaurant A',
+      name: 'Warung Minang',
       userType: 'seller',
     ),
   ];

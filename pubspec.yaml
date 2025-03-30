@@ -16,6 +16,9 @@ dependencies:
   shared_preferences: ^2.2.2
   lottie: ^2.7.0
   intl: ^0.18.1
+  image_picker: ^0.8.7
+  path_provider: ^2.0.15
+  path: ^1.8.3
 
   # External dependencies
   cached_network_image: ^3.3.0

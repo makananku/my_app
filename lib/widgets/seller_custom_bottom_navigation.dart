@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:my_app/screens/seller_balance_screen.dart';
-import 'package:my_app/screens/seller_home.dart';
-import 'package:my_app/screens/seller_my_product_screen.dart';
+import 'package:my_app/screens/seller_balance_screen.dart' as balance_screen;
+import 'package:my_app/screens/seller_home.dart' as home_screen;
+import 'package:my_app/screens/seller_my_product_screen.dart' as product_screen;
 
 class NavIndices {
   static const home = 0;
@@ -37,7 +37,6 @@ class _SellerCustomBottomNavigationState
   }
 
   void _navigateWithDirectionalSlide(int newIndex) {
-    // Don't navigate if already on this page
     if (_currentIndex == newIndex) return;
 
     final currentIndex = _currentIndex;
@@ -55,13 +54,13 @@ class _SellerCustomBottomNavigationState
       Widget nextPage;
       switch (newIndex) {
         case NavIndices.home:
-          nextPage = const SellerHomeScreen();
+          nextPage = const home_screen.SellerHomeScreen();
           break;
         case NavIndices.balance:
-          nextPage = const SellerBalanceScreen();
+          nextPage = const balance_screen.SellerBalanceScreen();
           break;
         case NavIndices.products:
-          nextPage = const SellerMyProductScreen();
+          nextPage = const product_screen.SellerMyProductScreen();
           break;
         default:
           return;
