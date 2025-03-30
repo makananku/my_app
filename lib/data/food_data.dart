@@ -10,6 +10,7 @@ class FoodData {
           "time": "8 mins",
           "imgUrl": "assets/food/soto_ayam.jpg",
           "price": "20.000",
+          "sellerEmail": "456@seller.umn.ac.id",
         },
         {
           "title": "Nasi Pecel",
@@ -17,6 +18,7 @@ class FoodData {
           "time": "5 mins",
           "imgUrl": "assets/food/nasi_pecel.jpg",
           "price": "15.000",
+          "sellerEmail": "456@seller.umn.ac.id",
         },
         {
           "title": "Bakso",

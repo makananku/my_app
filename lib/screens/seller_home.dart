@@ -10,12 +10,15 @@ class SellerHomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final user = Provider.of<AuthProvider>(context).user;
+    final tenantName = user?.name ?? 'Tenant'; // Default fallback jika name null
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text(
-          'Seller Dashboard',
-          style: TextStyle(
+        title: Text(
+          '$tenantName', // Menampilkan nama tenant
+          style: const TextStyle(
             color: Colors.black,
             fontWeight: FontWeight.bold,
           ),

@@ -1,15 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:my_app/screens/seller_edit_product_screen.dart';
 import 'package:my_app/screens/seller_home.dart';
 import 'package:my_app/widgets/seller_custom_bottom_navigation.dart';
 import 'package:my_app/data/food_data.dart';
+import 'package:provider/provider.dart';
+import 'package:my_app/auth/auth_provider.dart';
+import 'package:my_app/models/product_model.dart'; // Import your Product model
 
 class SellerMyProductScreen extends StatelessWidget {
   const SellerMyProductScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // Get all food items (you can change 'All' to specific category if needed)
-    final List<Map<String, String>> foodItems = FoodData.getFoodItems('All');
+    final authProvider = Provider.of<AuthProvider>(context);
+    final currentSellerEmail = authProvider.user?.email;
+
+    final List<Map<String, String>> allFoodItems = FoodData.getFoodItems('All');
+    final List<Map<String, String>> sellerFoodItems = allFoodItems.where((item) {
+      return item['sellerEmail'] == currentSellerEmail;
+    }).toList();
 
     return WillPopScope(
       onWillPop: () async {
@@ -21,18 +30,13 @@ class SellerMyProductScreen extends StatelessWidget {
       },
       child: Scaffold(
         appBar: AppBar(
-          title: const Text(
-            'My Product',
-            style: TextStyle(color: Colors.black),
-          ),
+          title: const Text('My Product', style: TextStyle(color: Colors.black)),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back, color: Colors.black),
             onPressed: () {
               Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => const SellerHomeScreen(),
-                ),
+                MaterialPageRoute(builder: (context) => const SellerHomeScreen()),
               );
             },
           ),
@@ -40,7 +44,12 @@ class SellerMyProductScreen extends StatelessWidget {
             IconButton(
               icon: const Icon(Icons.add, color: Colors.black),
               onPressed: () {
-                // Handle the action of adding a product
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const SellerEditProductScreen(),
+                  ),
+                );
               },
             ),
           ],
@@ -52,22 +61,44 @@ class SellerMyProductScreen extends StatelessWidget {
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 80.0),
-              child: ListView.builder(
-                itemCount: foodItems.length,
-                itemBuilder: (context, index) {
-                  final item = foodItems[index];
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 8.0),
-                    child: _buildProductCard(
-                      imageUrl: item['imgUrl']!,
-                      productName: item['title']!,
-                      productSubtitle: item['subtitle']!,
-                      productPrice: 'Rp${item['price']}',
-                      preparationTime: item['time']!,
+              child: sellerFoodItems.isEmpty
+                  ? const Center(child: Text('No products found. Add your first product!'))
+                  : ListView.builder(
+                      itemCount: sellerFoodItems.length,
+                      itemBuilder: (context, index) {
+                        final item = sellerFoodItems[index];
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 8.0),
+                          child: _buildProductCard(
+                            imageUrl: item['imgUrl']!,
+                            productName: item['title']!,
+                            productSubtitle: item['subtitle']!,
+                            productPrice: 'Rp${item['price']}',
+                            preparationTime: item['time']!,
+                            onEdit: () {
+                              // Convert the Map to Product before passing
+                              final product = Product(
+                                id: index.toString(), // or generate a proper ID
+                                title: item['title']!,
+                                subtitle: item['subtitle']!,
+                                time: item['time']!,
+                                imgUrl: item['imgUrl']!,
+                                price: item['price']!,
+                                sellerEmail: item['sellerEmail']!, String: null,
+                              );
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => SellerEditProductScreen(
+                                    product: product,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        );
+                      },
                     ),
-                  );
-                },
-              ),
             ),
             Positioned(
               bottom: 0,
@@ -84,12 +115,13 @@ class SellerMyProductScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildProductCard({
+Widget _buildProductCard({
     required String imageUrl,
     required String productName,
     required String productSubtitle,
     required String productPrice,
     required String preparationTime,
+    required VoidCallback onEdit, // Add this parameter
   }) {
     return Card(
       elevation: 2,
@@ -141,7 +173,10 @@ class SellerMyProductScreen extends StatelessWidget {
               children: [
                 _buildPreparationTime(preparationTime),
                 const SizedBox(height: 8),
-                _buildEditButton(),
+                IconButton(
+                  icon: const Icon(Icons.edit, color: Colors.blue),
+                  onPressed: onEdit, // Use the onEdit callback here
+                ),
               ],
             ),
           ],

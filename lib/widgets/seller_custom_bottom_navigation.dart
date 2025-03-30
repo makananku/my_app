@@ -92,43 +92,46 @@ class _SellerCustomBottomNavigationState
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedContainer(
-      duration: _animationDuration,
-      curve: _animationCurve,
-      height: 72,
-      child: AnimatedOpacity(
+    return Material(
+      type: MaterialType.transparency, // Key change here
+      child: AnimatedContainer(
         duration: _animationDuration,
         curve: _animationCurve,
-        opacity: 1,
-        child: Align(
-          alignment: Alignment.bottomCenter,
-          child: AnimatedContainer(
-            duration: _animationDuration,
-            curve: _animationCurve,
-            margin: const EdgeInsets.only(bottom: 20),
-            width: MediaQuery.of(context).size.width * 0.9,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(30),
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
-                decoration: BoxDecoration(
-                  color: Colors.blue.shade700,
-                  borderRadius: BorderRadius.circular(30),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.2),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _buildNavItem(Icons.calendar_today, NavIndices.home),
-                    _buildNavItem(Icons.account_balance_wallet, NavIndices.balance),
-                    _buildNavItem(Icons.shopping_bag, NavIndices.products),
-                  ],
+        height: 72,
+        child: AnimatedOpacity(
+          duration: _animationDuration,
+          curve: _animationCurve,
+          opacity: 1,
+          child: Align(
+            alignment: Alignment.bottomCenter,
+            child: AnimatedContainer(
+              duration: _animationDuration,
+              curve: _animationCurve,
+              margin: const EdgeInsets.only(bottom: 20),
+              width: MediaQuery.of(context).size.width * 0.9,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(30),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade700,
+                    borderRadius: BorderRadius.circular(30),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.2),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _buildNavItem(Icons.calendar_today, NavIndices.home),
+                      _buildNavItem(Icons.account_balance_wallet, NavIndices.balance),
+                      _buildNavItem(Icons.shopping_bag, NavIndices.products),
+                    ],
+                  ),
                 ),
               ),
             ),

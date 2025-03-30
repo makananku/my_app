@@ -39,7 +39,7 @@ class _SellerBalanceScreenState extends State<SellerBalanceScreen> {
         backgroundColor: Colors.white,
         appBar: AppBar(
           title: const Text(
-            'Saldo Saya',
+            'My Balance',
             style: TextStyle(
               color: Colors.black,
               fontSize: 18,
@@ -65,7 +65,7 @@ class _SellerBalanceScreenState extends State<SellerBalanceScreen> {
         body: Stack(
           children: [
             SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 72), // Adjusted bottom padding
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 200), 
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -82,7 +82,7 @@ class _SellerBalanceScreenState extends State<SellerBalanceScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text(
-                            'Saldo Tersedia',
+                            'Balance Available',
                             style: TextStyle(
                               fontSize: 16,
                               color: Colors.black,
@@ -110,7 +110,7 @@ class _SellerBalanceScreenState extends State<SellerBalanceScreen> {
                               ),
                             ),
                             child: const Text(
-                              'Tarik Dana',
+                              'Withdraw',
                               style: TextStyle(fontSize: 16, color: Colors.white),
                             ),
                           ),
@@ -122,7 +122,7 @@ class _SellerBalanceScreenState extends State<SellerBalanceScreen> {
 
                   // Payment Methods Section
                   const Text(
-                    'Metode Penarikan',
+                    'Withdrawal Method',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -150,20 +150,19 @@ class _SellerBalanceScreenState extends State<SellerBalanceScreen> {
                     Padding(
                       padding: const EdgeInsets.only(top: 8),
                       child: Text(
-                        'Terkait dengan nomor: $_userGopayNumber',
+                        'Related to number: $_userGopayNumber',
                         style: TextStyle(
                           color: Colors.grey[600],
                           fontSize: 14,
                         ),
                       ),
                     ),
-
                   const SizedBox(height: 16),
                   OutlinedButton.icon(
                     onPressed: _addNewPaymentMethod,
                     icon: const Icon(Icons.add, color: Colors.blue),
                     label: const Text(
-                      'Tambah Metode Penarikan',
+                      'Add Withdrawal Method',
                       style: TextStyle(color: Colors.blue),
                     ),
                     style: OutlinedButton.styleFrom(
@@ -178,7 +177,7 @@ class _SellerBalanceScreenState extends State<SellerBalanceScreen> {
               ),
             ),
             Positioned(
-              bottom: 8, // Reduced from 0 to 8 to lower the navigation
+              bottom: 8,
               left: 0,
               right: 0,
               child: SellerCustomBottomNavigation(
@@ -194,7 +193,7 @@ class _SellerBalanceScreenState extends State<SellerBalanceScreen> {
 
   void _printBalanceSummary() {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Mencetak ringkasan saldo...')),
+      const SnackBar(content: Text('Printing balance summary...')),
     );
   }
 
@@ -204,15 +203,16 @@ class _SellerBalanceScreenState extends State<SellerBalanceScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Tarik ke ${_selectedMethod!.name}'),
+        backgroundColor: Colors.white,
+        title: Text('Withdraw to ${_selectedMethod!.name}'),
         content: Text(
-          'Anda akan menarik dana ke akun ${_selectedMethod!.name} '
+          'You will withdraw funds to the ${_selectedMethod!.name} account ' 
           '$_userGopayNumber',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Batal', style: TextStyle(color: Colors.black)),
+            child: const Text('Cancel', style: TextStyle(color: Colors.black)),
           ),
           TextButton(
             onPressed: () {
@@ -220,12 +220,12 @@ class _SellerBalanceScreenState extends State<SellerBalanceScreen> {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
-                    'Penarikan ke ${_selectedMethod!.name} diproses',
+                    'proccesing withdrawal to ${_selectedMethod!.name}',
                   ),
                 ),
               );
             },
-            child: const Text('Konfirmasi', style: TextStyle(color: Colors.blue)),
+            child: const Text('Confirm', style: TextStyle(color: Colors.blue)),
           ),
         ],
       ),
@@ -234,7 +234,7 @@ class _SellerBalanceScreenState extends State<SellerBalanceScreen> {
 
   void _addNewPaymentMethod() {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Menambahkan metode pembayaran baru...')),
+      const SnackBar(content: Text('Adding new payment method...')),
     );
   }
 }
