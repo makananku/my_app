@@ -1,4 +1,3 @@
-// payment_methods_data.dart
 import '../models/payment_method.dart';
 import 'package:flutter/material.dart';
 
@@ -7,8 +6,8 @@ final List<PaymentMethod> paymentMethods = [
     id: 'gopay',
     name: 'GoPay',
     iconPath: 'assets/payment/gopay.png',
-    description: 'Pay using your GoPay account',
-    primaryColor: const Color(0xFF00AA13), // GoPay green
+    description: 'Instant transfer to your GoPay account',
+    primaryColor: const Color(0xFF00AA13),
     requiresPhoneNumber: true,
     supportsTopUp: true,
   ),
@@ -16,8 +15,8 @@ final List<PaymentMethod> paymentMethods = [
     id: 'ovo',
     name: 'OVO',
     iconPath: 'assets/payment/ovo.png',
-    description: 'Pay using your OVO account',
-    primaryColor: const Color(0xFF4C2A86), // OVO purple
+    description: 'Fast transfer to your OVO wallet',
+    primaryColor: const Color(0xFF4C2A86),
     requiresPhoneNumber: true,
     supportsTopUp: true,
   ),

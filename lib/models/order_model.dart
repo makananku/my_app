@@ -3,9 +3,11 @@ class Order {
   final DateTime orderTime;
   final DateTime pickupTime;
   final List<OrderItem> items;
-  final String status; // 'ongoing', 'completed'
+  final String status; // 'pending', 'processing', 'ready', 'completed', 'cancelled'
   final String paymentMethod;
   final String merchantName;
+  final String customerName;
+  final String? cancellationReason;
 
   Order({
     required this.id,
@@ -14,7 +16,9 @@ class Order {
     required this.items,
     required this.paymentMethod,
     required this.merchantName,
-    this.status = 'ongoing',
+    required this.customerName,
+    this.status = 'pending',
+    this.cancellationReason,
   });
 
   double get totalPrice {
@@ -30,6 +34,8 @@ class Order {
       'status': status,
       'paymentMethod': paymentMethod,
       'merchantName': merchantName,
+      'customerName': customerName,
+      'cancellationReason': cancellationReason,
     };
   }
 
@@ -41,7 +47,9 @@ class Order {
       items: (map['items'] as List).map((i) => OrderItem.fromMap(i)).toList(),
       paymentMethod: map['paymentMethod'],
       merchantName: map['merchantName'],
-      status: map['status'],
+      customerName: map['customerName'],
+      status: map['status'] ?? 'pending',
+      cancellationReason: map['cancellationReason'],
     );
   }
 }
@@ -60,6 +68,7 @@ class OrderItem {
     required this.price,
     required this.quantity,
   });
+
   Map<String, dynamic> toMap() {
     return {
       'name': name,

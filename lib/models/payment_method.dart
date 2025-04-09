@@ -5,8 +5,8 @@ class PaymentMethod {
   final String name;
   final String iconPath;
   final String description;
-  final Color? primaryColor; 
-  final bool requiresPhoneNumber; 
+  final Color? primaryColor;
+  final bool requiresPhoneNumber;
   final bool supportsTopUp;
 
   PaymentMethod({

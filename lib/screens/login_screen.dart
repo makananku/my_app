@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:my_app/auth/auth_service.dart';
-import 'package:my_app/screens/seller_home.dart';
+import 'package:my_app/screens/seller/home_screen.dart';
 import 'package:provider/provider.dart';
 import '../auth/auth_provider.dart';
-import 'home_screen.dart';
+import 'customer/home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -34,7 +34,25 @@ class _LoginScreenState extends State<LoginScreen>
     _opacityAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
-    _animationController.forward();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      await authProvider.initialize();
+      
+      if (authProvider.isLoggedIn && mounted) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(
+            builder: (context) => authProvider.isSeller 
+                ? const SellerHomeScreen()
+                : const HomeScreen(),
+          ),
+          (route) => false,
+        );
+      } else {
+        _animationController.forward();
+      }
+    });
   }
 
   @override
@@ -45,69 +63,71 @@ class _LoginScreenState extends State<LoginScreen>
     super.dispose();
   }
 
-Future<void> _handleLogin() async {
+  Future<void> _handleLogin() async {
   if (!_formKey.currentState!.validate()) return;
 
   setState(() => _isLoading = true);
 
-  final authProvider = Provider.of<AuthProvider>(context, listen: false);
-  final authService = Provider.of<AuthService>(context, listen: false);
+  try {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final authService = Provider.of<AuthService>(context, listen: false);
 
-  final user = await authService.login(
-    _emailController.text.trim(),
-    _passwordController.text.trim(),
-  );
-
-  if (!mounted) return;
-
-  setState(() => _isLoading = false);
-
-  if (user != null) {
-    final success = await authProvider.login(
-      user.email,
-      user.password,
-      user.name,
-      user.userType,
+    final user = await authService.login(
+      _emailController.text.trim(),
+      _passwordController.text.trim(),
     );
 
-    if (success) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (context) => user.userType == 'seller' 
-              ? const SellerHomeScreen() 
-              : const HomeScreen(),
-        ),
+    if (!mounted) return;
+
+    if (user != null) {
+      final success = await authProvider.login(
+        user.email,
+        user.name,
+        user.userType,
       );
+
+      if (success && mounted) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(
+            builder: (context) => user.userType == 'seller'
+                ? const SellerHomeScreen()
+                : const HomeScreen(),
+          ),
+          (route) => false,
+        );
+      }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Login failed. Invalid credentials.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
-  } else {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Login failed. Invalid credentials.'),
-        backgroundColor: Colors.red,
-        behavior: SnackBarBehavior.floating,
-        margin: EdgeInsets.all(20),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(10)),
-      ),
-      )
-    );
+  } finally {
+    if (mounted) {
+      setState(() => _isLoading = false);
+    }
   }
 }
 
   String? _validateEmail(String? value) {
-  if (value == null || value.isEmpty) {
-    return 'Email is required';
+    if (value == null || value.isEmpty) {
+      return 'Email is required';
+    }
+    if (!value.endsWith('@student.umn.ac.id') &&
+        !value.endsWith('@seller.umn.ac.id') &&
+        !value.endsWith('@umn.ac.id') &&
+        !value.endsWith('@lecturer.umn.ac.id')) {
+      return 'Email invalid';
+    }
+    return null;
   }
-  if (!value.endsWith('@student.umn.ac.id') &&
-      !value.endsWith('@seller.umn.ac.id') &&
-      !value.endsWith('@umn.ac.id') &&
-      !value.endsWith('@lecturer.umn.ac.id')) {
-    return 'Email invalid';
-  }
-  return null;
-}
 
-String? _validatePassword(String? value) {
+  String? _validatePassword(String? value) {
     if (value == null || value.isEmpty) {
       return 'Password is required';
     }
@@ -248,16 +268,15 @@ String? _validatePassword(String? value) {
                   ),
                   elevation: 0,
                 ),
-                child:
-                    _isLoading
-                        ? const CircularProgressIndicator(color: Colors.white)
-                        : const Text(
-                          'LOGIN',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
+                child: _isLoading
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text(
+                        'LOGIN',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
                         ),
+                      ),
               ),
             ),
           ],

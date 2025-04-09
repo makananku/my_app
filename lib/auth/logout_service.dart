@@ -2,21 +2,41 @@ import 'package:flutter/material.dart';
 import 'package:my_app/screens/login_screen.dart';
 import 'package:provider/provider.dart';
 import 'auth_provider.dart';
+import 'package:my_app/providers/food_provider.dart';
 
 class LogoutService {
   static Future<void> logout(BuildContext context) async {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    await authProvider.logout();
-    
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (context) => const LoginScreen()),
-      (Route<dynamic> route) => false,
-    );
+    try {
+      // Tutup semua dialog yang mungkin terbuka
+      Navigator.of(context, rootNavigator: true).popUntil((route) => route.isFirst);
+      
+      // Clear auth state
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      await authProvider.logout();
+      
+      // Clear food products jika diperlukan
+      final foodProvider = Provider.of<FoodProvider>(context, listen: false);
+      foodProvider.clearProducts();
+      
+      // Navigasi ke login screen dengan menghapus semua route sebelumnya
+      await Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const LoginScreen()),
+        (Route<dynamic> route) => false,
+      );
+    } catch (e) {
+      debugPrint('Logout error: $e');
+      // Fallback navigasi jika terjadi error
+      Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const LoginScreen()),
+        (Route<dynamic> route) => false,
+      );
+    }
   }
 
   static Future<void> showLogoutConfirmation(BuildContext context) async {
     return showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (BuildContext context) {
         return AlertDialog(
           backgroundColor: Colors.white,
@@ -36,10 +56,7 @@ class LogoutService {
           ),
           actions: [
             TextButton(
-              child: const Text(
-                "Cancel",
-                style: TextStyle(color: Colors.blue),
-              ),
+              child: const Text("Cancel"),
               onPressed: () => Navigator.of(context).pop(),
             ),
             TextButton(
@@ -48,8 +65,8 @@ class LogoutService {
                 style: TextStyle(color: Colors.red),
               ),
               onPressed: () async {
-                Navigator.of(context).pop();
-                await logout(context);
+                Navigator.of(context).pop(); // Tutup dialog
+                await logout(context); // Proses logout
               },
             ),
           ],

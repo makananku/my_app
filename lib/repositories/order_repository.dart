@@ -24,7 +24,7 @@ class OrderRepository {
         quantity: item.quantity,
       )).toList(),
       paymentMethod: paymentMethod,
-      merchantName: merchantName, // Using first item's subtitle as merchant name
+      merchantName: merchantName, customerName: '', // Using first item's subtitle as merchant name
     );
 
     _orders.insert(0, order);

@@ -1,8 +1,8 @@
-// payment_method_card.dart
 import 'package:flutter/material.dart';
 import '../../models/payment_method.dart';
+import 'package:flutter/services.dart';
 
-class PaymentMethodCard extends StatelessWidget {
+class PaymentMethodCard extends StatefulWidget {
   final PaymentMethod method;
   final bool isSelected;
   final VoidCallback onTap;
@@ -15,61 +15,132 @@ class PaymentMethodCard extends StatelessWidget {
   }) : super(key: key);
 
   @override
+  _PaymentMethodCardState createState() => _PaymentMethodCardState();
+}
+
+class _PaymentMethodCardState extends State<PaymentMethodCard>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: Duration(milliseconds: 200),
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.95).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Card(
-      color: isSelected ? method.primaryColor?.withOpacity(0.1) : Colors.white,
-      elevation: isSelected ? 4 : 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: isSelected
-            ? BorderSide(color: method.primaryColor ?? Colors.blue, width: 2)
-            : const BorderSide(color: Colors.grey, width: 0.5),
-      ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: isSelected ? method.primaryColor?.withOpacity(0.2) : Colors.grey[100],
-                  borderRadius: BorderRadius.circular(8),
+    return GestureDetector(
+      onTapDown: (_) => _controller.forward(),
+      onTapUp: (_) {
+        _controller.reverse();
+        HapticFeedback.lightImpact(); // Haptic feedback added
+        widget.onTap();
+      },
+      onTapCancel: () => _controller.reverse(),
+      child: ScaleTransition(
+        scale: _scaleAnimation,
+        child: Card(
+          color: widget.isSelected
+              ? widget.method.primaryColor?.withOpacity(0.08)
+              : Colors.white,
+          elevation: widget.isSelected ? 6 : 2,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(
+              color: widget.isSelected
+                  ? widget.method.primaryColor ?? Colors.blue
+                  : Colors.grey[300]!,
+              width: widget.isSelected ? 1.8 : 0.8,
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Row(
+              children: [
+                // Logo with glowing effect when selected
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: widget.isSelected
+                        ? widget.method.primaryColor?.withOpacity(0.15)
+                        : Colors.grey[50],
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: widget.isSelected
+                        ? [
+                            BoxShadow(
+                              color: widget.method.primaryColor!
+                                  .withOpacity(0.2),
+                              blurRadius: 10,
+                              spreadRadius: 2,
+                            )
+                          ]
+                        : null,
+                  ),
+                  child: Image.asset(
+                    widget.method.iconPath,
+                    height: 36,
+                    width: 36,
+                  ),
                 ),
-                child: Image.asset(method.iconPath, height: 30),
-              ),
-              const SizedBox(width: 16),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    method.name,
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: isSelected ? method.primaryColor : Colors.black,
-                      fontSize: 16,
-                    ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.method.name,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: widget.isSelected
+                              ? widget.method.primaryColor
+                              : Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        widget.method.description,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: widget.isSelected
+                              ? widget.method.primaryColor?.withOpacity(0.7)
+                              : Colors.grey[600],
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    method.description,
-                    style: TextStyle(
-                      color: isSelected 
-                          ? method.primaryColor?.withOpacity(0.8) 
-                          : Colors.grey[600],
-                      fontSize: 12,
-                    ),
+                ),
+                // Checkmark with animation
+                AnimatedSwitcher(
+                  duration: Duration(milliseconds: 300),
+                  transitionBuilder: (child, animation) => ScaleTransition(
+                    scale: animation,
+                    child: child,
                   ),
-                ],
-              ),
-              const Spacer(),
-              if (isSelected)
-                Icon(Icons.check_circle, 
-                    color: method.primaryColor ?? Colors.blue,
-                    size: 28),
-            ],
+                  child: widget.isSelected
+                      ? Icon(
+                          Icons.check_circle_rounded,
+                          color: widget.method.primaryColor ?? Colors.blue,
+                          size: 28,
+                        )
+                      : SizedBox(width: 28),
+                ),
+              ],
+            ),
           ),
         ),
       ),

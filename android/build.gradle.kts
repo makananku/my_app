@@ -1,3 +1,16 @@
+buildscript {
+    val kotlinVersion = "1.9.22"
+    
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath("com.android.tools.build:gradle:8.3.2")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion")
+    }
+}
+
 allprojects {
     repositories {
         google()
@@ -19,14 +32,4 @@ subprojects {
 
 tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
-}
-
-buildscript {
-    repositories {
-        google()
-        mavenCentral()
-    }
-    dependencies {
-        classpath("com.android.tools.build:gradle:7.3.0")  // Corrected to Kotlin DSL format
-    }
 }

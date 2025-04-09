@@ -8,31 +8,28 @@ import 'providers/cart_provider.dart';
 import 'providers/favorite_provider.dart';
 import 'providers/food_provider.dart';
 import 'screens/login_screen.dart';
-import 'screens/home_screen.dart';
-import 'screens/seller_home.dart';
+import 'screens/customer/home_screen.dart';
+import 'screens/seller/home_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final prefs = await SharedPreferences.getInstance();
-  
 
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(
-          create: (context) => AuthProvider(prefs),
-        ),
+        ChangeNotifierProvider(create: (context) => AuthProvider(prefs)),
         Provider(create: (context) => AuthService()),
         ChangeNotifierProvider(create: (context) => CartProvider()),
         ChangeNotifierProvider(create: (context) => FavoriteProvider()),
         ChangeNotifierProvider(create: (context) => FoodProvider()),
-        ChangeNotifierProvider(create: (_) => OrderProvider()),
+        ChangeNotifierProvider(create: (_) => OrderProvider(prefs)),
+        ChangeNotifierProvider(create: (_) => AuthProvider(prefs)),
       ],
       child: const MyApp(),
     ),
   );
 }
-
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -41,10 +38,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        fontFamily: 'Poppins',
-      ),
+      theme: ThemeData(primarySwatch: Colors.blue, fontFamily: 'Poppins'),
       home: const AuthWrapper(),
     );
   }
@@ -63,9 +57,7 @@ class AuthWrapper extends StatelessWidget {
         if (snapshot.connectionState == ConnectionState.done) {
           return const SplashScreen();
         }
-        return const Scaffold(
-          body: Center(child: CircularProgressIndicator()),
-        );
+        return const Scaffold(body: Center(child: CircularProgressIndicator()));
       },
     );
   }
@@ -83,14 +75,14 @@ class _SplashScreenState extends State<SplashScreen>
   late AnimationController _logoController;
   late Animation<double> _logoScale;
   late Animation<double> _logoOpacity;
-  
+
   late AnimationController _textController;
   late Animation<Offset> _textSlide;
   late Animation<double> _textOpacity;
-  
+
   late AnimationController _bgController;
   late Animation<Color?> _bgColor;
-  
+
   late AnimationController _buttonController;
   late Animation<double> _buttonScale;
   late Animation<double> _buttonOpacity;
@@ -99,7 +91,7 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   void initState() {
     super.initState();
-    
+
     _logoController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1800),
@@ -107,10 +99,11 @@ class _SplashScreenState extends State<SplashScreen>
     _logoScale = Tween<double>(begin: 0.5, end: 1.0).animate(
       CurvedAnimation(parent: _logoController, curve: Curves.elasticOut),
     );
-    _logoOpacity = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _logoController, curve: Curves.easeIn),
-    );
-    
+    _logoOpacity = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _logoController, curve: Curves.easeIn));
+
     _textController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1500),
@@ -118,14 +111,14 @@ class _SplashScreenState extends State<SplashScreen>
     _textSlide = Tween<Offset>(
       begin: const Offset(0, 0.5),
       end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _textController,
-      curve: Curves.easeOutQuart,
-    ));
-    _textOpacity = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _textController, curve: Curves.easeIn),
+    ).animate(
+      CurvedAnimation(parent: _textController, curve: Curves.easeOutQuart),
     );
-    
+    _textOpacity = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _textController, curve: Curves.easeIn));
+
     _bgController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 2000),
@@ -134,7 +127,7 @@ class _SplashScreenState extends State<SplashScreen>
       begin: Colors.blue[800],
       end: Colors.white,
     ).animate(_bgController);
-    
+
     _buttonController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1200),
@@ -157,17 +150,17 @@ class _SplashScreenState extends State<SplashScreen>
         curve: const Interval(0.3, 1.0, curve: Curves.easeOutQuart),
       ),
     );
-    
+
     _startAnimations();
   }
 
   Future<void> _startAnimations() async {
     await Future.delayed(const Duration(milliseconds: 500));
     _logoController.forward();
-    
+
     await Future.delayed(const Duration(milliseconds: 900));
     _textController.forward();
-    
+
     await Future.delayed(const Duration(milliseconds: 800));
     _bgController.forward().then((_) {
       _buttonController.forward().then((_) {
@@ -181,9 +174,9 @@ class _SplashScreenState extends State<SplashScreen>
     if (auth.isLoggedIn) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
-          builder: (context) => auth.isSeller 
-              ? const SellerHomeScreen() 
-              : const HomeScreen(),
+          builder:
+              (context) =>
+                  auth.isSeller ? const SellerHomeScreen() : const HomeScreen(),
         ),
       );
     }
@@ -201,7 +194,7 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
-    
+
     return AnimatedBuilder(
       animation: Listenable.merge([
         _logoController,
@@ -223,9 +216,9 @@ class _SplashScreenState extends State<SplashScreen>
                     child: const FlutterLogo(size: 100),
                   ),
                 ),
-                
+
                 const SizedBox(height: 30),
-                
+
                 SlideTransition(
                   position: _textSlide,
                   child: FadeTransition(
@@ -237,9 +230,10 @@ class _SplashScreenState extends State<SplashScreen>
                           style: TextStyle(
                             fontSize: 36,
                             fontWeight: FontWeight.bold,
-                            color: _bgController.value < 0.5 
-                                ? Colors.white 
-                                : Colors.blue[800],
+                            color:
+                                _bgController.value < 0.5
+                                    ? Colors.white
+                                    : Colors.blue[800],
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -247,16 +241,17 @@ class _SplashScreenState extends State<SplashScreen>
                           'UMN Canteen',
                           style: TextStyle(
                             fontSize: 16,
-                            color: _bgController.value < 0.5 
-                                ? Colors.white70 
-                                : Colors.grey,
+                            color:
+                                _bgController.value < 0.5
+                                    ? Colors.white70
+                                    : Colors.grey,
                           ),
                         ),
                       ],
                     ),
                   ),
                 ),
-                
+
                 if (_bgController.isCompleted && !auth.isLoggedIn) ...[
                   const SizedBox(height: 100),
                   _buildAnimatedAuthButtons(),
@@ -314,13 +309,16 @@ class _SplashScreenState extends State<SplashScreen>
                   Navigator.push(
                     context,
                     PageRouteBuilder(
-                      pageBuilder: (context, animation, secondaryAnimation) =>
-                          const LoginScreen(),
-                      transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                        return FadeTransition(
-                          opacity: animation,
-                          child: child,
-                        );
+                      pageBuilder:
+                          (context, animation, secondaryAnimation) =>
+                              const LoginScreen(),
+                      transitionsBuilder: (
+                        context,
+                        animation,
+                        secondaryAnimation,
+                        child,
+                      ) {
+                        return FadeTransition(opacity: animation, child: child);
                       },
                       transitionDuration: const Duration(milliseconds: 800),
                     ),
@@ -338,18 +336,6 @@ class _SplashScreenState extends State<SplashScreen>
             ),
           ),
           const SizedBox(height: 15),
-          TextButton(
-            onPressed: () {
-              // Navigate to register screen
-            },
-            child: const Text(
-              "Don't have an account? Register",
-              style: TextStyle(
-                color: Colors.blue,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
         ],
       ),
     );

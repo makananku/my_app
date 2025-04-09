@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:my_app/screens/seller_balance_screen.dart' as balance_screen;
-import 'package:my_app/screens/seller_home.dart' as home_screen;
-import 'package:my_app/screens/seller_my_product_screen.dart' as product_screen;
+import 'package:my_app/screens/seller/my_balance_screen.dart' as balance_screen;
+import 'package:my_app/screens/seller/home_screen.dart' as home_screen;
+import 'package:my_app/screens/seller/my_product_screen.dart' as product_screen;
 
 class NavIndices {
   static const home = 0;

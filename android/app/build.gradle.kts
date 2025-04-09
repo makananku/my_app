@@ -5,38 +5,66 @@ plugins {
 }
 
 android {
-    namespace = "com.example.my_app"  // ✅ Tambahkan namespace (Wajib)
-    compileSdk = 35  // Use compileSdkVersion that is compatible (update to version 33 or later if needed)
+    namespace = "com.example.my_app"
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.example.my_app"
         minSdk = 21
-        targetSdk = 35  // Ensure the targetSdk is compatible with your project
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0.0"
+        
+        ndk {
+            abiFilters.addAll(setOf("armeabi-v7a", "arm64-v8a", "x86_64"))
+        }
     }
 
     buildTypes {
-        release {
-            isMinifyEnabled = false  // Pastikan `minifyEnabled` tetap false
-            isShrinkResources = false  // Nonaktifkan shrinkResources
+        getByName("debug") {
+            isDebuggable = true
+            isJniDebuggable = true
+        }
+        getByName("release") {
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
-                file("proguard-rules.pro")
+                "proguard-rules.pro"
             )
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_11.toString()
+        jvmTarget = "17"
+    }
+
+    packagingOptions {
+        resources.excludes.addAll(
+            setOf(
+                "/META-INF/{AL2.0,LGPL2.1}",
+                "**/kotlin/**",
+                "**/DebugProbesKt.bin"
+            )
+        )
+    }
+
+    buildFeatures {
+        buildConfig = true
+        viewBinding = true
     }
 }
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    implementation("androidx.core:core-ktx:1.12.0")
 }

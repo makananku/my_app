@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_keyboard_visibility/flutter_keyboard_visibility.dart';
-import '../screens/home_screen.dart';
-import '../screens/my_orders_screen.dart';
-import '../screens/shopping_cart_screen.dart';
-import '../screens/profile_screen.dart';
+import '../screens/customer/home_screen.dart';
+import '../screens/customer/my_orders_screen.dart';
+import '../screens/customer/shopping_cart_screen.dart';
+import '../screens/customer/profile_screen.dart';
 
 class CustomBottomNavigation extends StatefulWidget {
   final int selectedIndex;
