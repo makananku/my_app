@@ -3,11 +3,13 @@ class Order {
   final DateTime orderTime;
   final DateTime pickupTime;
   final List<OrderItem> items;
-  final String status; // 'pending', 'processing', 'ready', 'completed', 'cancelled'
+  final String status;
   final String paymentMethod;
   final String merchantName;
+  final String merchantEmail; // Baru
   final String customerName;
   final String? cancellationReason;
+  final String? notes; // Baru
 
   Order({
     required this.id,
@@ -16,9 +18,11 @@ class Order {
     required this.items,
     required this.paymentMethod,
     required this.merchantName,
+    required this.merchantEmail, // Baru
     required this.customerName,
     this.status = 'pending',
     this.cancellationReason,
+    this.notes, // Baru
   });
 
   double get totalPrice {
@@ -49,7 +53,7 @@ class Order {
       merchantName: map['merchantName'],
       customerName: map['customerName'],
       status: map['status'] ?? 'pending',
-      cancellationReason: map['cancellationReason'],
+      cancellationReason: map['cancellationReason'], merchantEmail: '',
     );
   }
 }
@@ -66,7 +70,7 @@ class OrderItem {
     required this.image,
     required this.subtitle,
     required this.price,
-    required this.quantity,
+    required this.quantity, required String sellerEmail,
   });
 
   Map<String, dynamic> toMap() {
@@ -85,7 +89,7 @@ class OrderItem {
       image: map['image'],
       subtitle: map['subtitle'],
       price: map['price'],
-      quantity: map['quantity'],
+      quantity: map['quantity'], sellerEmail: '',
     );
   }
 }

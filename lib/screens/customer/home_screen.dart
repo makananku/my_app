@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_keyboard_visibility/flutter_keyboard_visibility.dart';
+import 'package:my_app/data/food_data.dart';
 import 'package:provider/provider.dart';
 import '../../providers/cart_provider.dart';
 import '../../providers/favorite_provider.dart';
@@ -159,7 +160,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     _navController.forward();
   }
 
-  void _handleFoodItemTap(String title, String price, String imgUrl, String subtitle) {
+  void _handleFoodItemTap(
+    String title,
+    String price,
+    String imgUrl,
+    String subtitle,
+    String sellerEmail,
+  ) {
     setState(() {
       selectedFoodItem = title;
       selectedFoodPrice = price;
@@ -189,7 +196,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         const SizedBox(height: 16),
         FoodList(
           selectedCategory: selectedCategory,
-          onFoodItemTap: _handleFoodItemTap,
+          onFoodItemTap: (title, price, imgUrl, subtitle, sellerEmail) {
+            _handleFoodItemTap(title, price, imgUrl, subtitle, sellerEmail);
+          },
         ),
         const SizedBox(height: 24),
         Padding(
@@ -271,16 +280,17 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             ),
             actions: [
               IconButton(
-                icon: const Icon(Icons.notifications_outlined, color: Colors.black),
+                icon: const Icon(
+                  Icons.notifications_outlined,
+                  color: Colors.black,
+                ),
                 onPressed: () {},
               ),
             ],
             elevation: 0,
             backgroundColor: Colors.white,
             shape: const RoundedRectangleBorder(
-              borderRadius: BorderRadius.vertical(
-                bottom: Radius.circular(16),
-              ),
+              borderRadius: BorderRadius.vertical(bottom: Radius.circular(16)),
             ),
           ),
           body: LayoutBuilder(
@@ -309,13 +319,29 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                               children: [
                                 Padding(
                                   padding: const EdgeInsets.symmetric(
-                                    horizontal: 16, vertical: 16),
+                                    horizontal: 16,
+                                    vertical: 16,
+                                  ),
                                   child: SearchWidget(
                                     searchController: _searchController,
                                     onSearchSubmitted: _handleSearch,
                                     onFillSearchBar: _fillSearchBar,
                                     onRemoveRecentSearch: _removeRecentSearch,
-                                    onFoodItemTap: _handleFoodItemTap,
+                                    onFoodItemTap: (
+                                      title,
+                                      price,
+                                      imgUrl,
+                                      subtitle,
+                                      sellerEmail,
+                                    ) {
+                                      _handleFoodItemTap(
+                                        title,
+                                        price,
+                                        imgUrl,
+                                        subtitle,
+                                        sellerEmail,
+                                      );
+                                    },
                                     isSearchActive: isSearchActive,
                                     focusNode: _searchFocusNode,
                                     categorySelector: CategorySelector(
@@ -331,7 +357,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             ),
                           ),
                         ),
-                        
+
                         // Semi-transparent overlay
                         if (isDetailVisible)
                           Positioned.fill(
@@ -359,12 +385,27 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                   context,
                                   listen: false,
                                 );
+
+                                // Get the full food item to access sellerEmail
+                                final foodItem = FoodData.getFoodItems(
+                                  'All',
+                                ).firstWhere(
+                                  (item) =>
+                                      item['title'] == selectedFoodItem &&
+                                      item['imgUrl'] == selectedFoodImgUrl,
+                                );
+
                                 cartProvider.addToCart(
                                   CartItem(
                                     name: selectedFoodItem,
-                                    price: int.parse(selectedFoodPrice.replaceAll(".", "")),
+                                    price: int.parse(
+                                      selectedFoodPrice.replaceAll(".", ""),
+                                    ),
                                     image: selectedFoodImgUrl,
                                     subtitle: selectedFoodSubtitle,
+                                    sellerEmail:
+                                        foodItem['sellerEmail'] ??
+                                        '', // Add sellerEmail
                                   ),
                                 );
                                 _closeDetailBox();
@@ -372,7 +413,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                   SnackBar(
                                     content: Text(
                                       "$selectedFoodItem added to cart!",
-                                      style: const TextStyle(color: Colors.white),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                      ),
                                     ),
                                     duration: const Duration(seconds: 2),
                                     behavior: SnackBarBehavior.floating,
@@ -384,18 +427,23 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                 );
                               },
                               onAddToFavorites: () {
-                                final favoriteProvider = Provider.of<FavoriteProvider>(
-                                  context,
-                                  listen: false,
-                                );
-                                if (favoriteProvider.favoriteItems.any((item) => 
-                                    item.name == selectedFoodItem && 
-                                    item.image == selectedFoodImgUrl)) {
+                                final favoriteProvider =
+                                    Provider.of<FavoriteProvider>(
+                                      context,
+                                      listen: false,
+                                    );
+                                if (favoriteProvider.favoriteItems.any(
+                                  (item) =>
+                                      item.name == selectedFoodItem &&
+                                      item.image == selectedFoodImgUrl,
+                                )) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
                                       content: Text(
                                         "$selectedFoodItem is already in your favorites",
-                                        style: const TextStyle(color: Colors.white),
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                        ),
                                       ),
                                       duration: const Duration(seconds: 2),
                                       behavior: SnackBarBehavior.floating,
@@ -440,12 +488,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               );
             },
           ),
-          floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+          floatingActionButtonLocation:
+              FloatingActionButtonLocation.centerDocked,
           floatingActionButton: AnimatedPositioned(
             duration: const Duration(milliseconds: 300),
-            bottom: isKeyboardVisible
-                ? MediaQuery.of(context).viewInsets.bottom + 16
-                : 0,
+            bottom:
+                isKeyboardVisible
+                    ? MediaQuery.of(context).viewInsets.bottom + 16
+                    : 0,
             left: 0,
             right: 0,
             child: AnimatedOpacity(

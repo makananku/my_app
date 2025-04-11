@@ -3,6 +3,7 @@ class CartItem {
   final int price;
   final String image;
   final String subtitle;
+  final String sellerEmail; // Add this
   int quantity;
 
   CartItem({
@@ -10,6 +11,7 @@ class CartItem {
     required this.price,
     required this.image,
     required this.subtitle,
+    required this.sellerEmail,
     this.quantity = 1,
   });
 

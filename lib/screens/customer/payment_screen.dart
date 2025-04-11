@@ -14,6 +14,7 @@ import '../../providers/cart_provider.dart';
 import '../../providers/order_provider.dart';
 import '../../models/cart_item.dart';
 import '../../models/order_model.dart';
+import '../../models/product_model.dart';
 
 class PaymentScreen extends StatefulWidget {
   final List<CartItem> items;
@@ -28,7 +29,7 @@ class PaymentScreen extends StatefulWidget {
 
 class _PaymentScreenState extends State<PaymentScreen> {
   String? selectedPaymentMethod;
-  DateTime deliveryTime = DateTime.now().add(const Duration(hours: 1));
+  DateTime pickupTime = DateTime.now().add(const Duration(hours: 1));
   String notes = '';
   String phoneNumber = '';
   bool isProcessing = false;
@@ -42,23 +43,24 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
   Color _getBorderColor() {
     if (selectedPaymentMethod == null) return Colors.grey;
-
     final method = paymentMethods.firstWhere(
       (m) => m.id == selectedPaymentMethod,
-      orElse:
-          () => PaymentMethod(id: '', name: '', iconPath: '', description: ''),
+      orElse: () => PaymentMethod(id: '', name: '', iconPath: '', description: ''),
     );
-
     return method.primaryColor ?? Colors.grey;
+  }
+
+  String? _getSellerEmailFromItems() {
+    if (widget.items.isEmpty) return null;
+    return widget.items.first.sellerEmail;
   }
 
   @override
   Widget build(BuildContext context) {
-    // Get merchant name from first item's subtitle
-    final merchantName =
-        widget.items.isNotEmpty
-            ? widget.items.first.subtitle
-            : 'Unknown Merchant';
+    final merchantName = widget.items.isNotEmpty
+        ? widget.items.first.subtitle
+        : 'Unknown Merchant';
+        
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -80,7 +82,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 _buildOrderSummary(merchantName),
                 const SizedBox(height: 24),
                 TimePickerWidget(
-                  onTimeSelected: (time) => setState(() => deliveryTime = time),
+                  onTimeSelected: (time) => setState(() => pickupTime = time),
                 ),
                 const SizedBox(height: 24),
                 _buildPaymentMethodSelector(),
@@ -120,42 +122,33 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 const Text('Order for', style: TextStyle(color: Colors.grey)),
                 const SizedBox(width: 4),
                 Text(
-                  'Today, ${DateFormat('HH:mm').format(deliveryTime)}',
+                  'Today, ${DateFormat('HH:mm').format(pickupTime)}',
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
               ],
             ),
             const Divider(height: 24),
-            ...widget.items
-                .map(
-                  (item) => Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 6.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Flexible(
-                          child: Text(
-                            '${item.name} (${item.quantity}x)',
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 2,
-                          ),
-                        ),
-                        Text(
-                          '${currencyFormat.format(item.price)} x ${item.quantity}',
-                        ),
-                      ],
+            ...widget.items.map((item) => Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Flexible(
+                    child: Text(
+                      '${item.name} (${item.quantity}x)',
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 2,
                     ),
                   ),
-                )
-                .toList(),
+                  Text('${currencyFormat.format(item.price)} x ${item.quantity}'),
+                ],
+              ),
+            )).toList(),
             const Divider(height: 24),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'Subtotal',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
+                const Text('Subtotal', style: TextStyle(fontWeight: FontWeight.bold)),
                 Text(
                   currencyFormat.format(widget.totalPrice),
                   style: const TextStyle(fontWeight: FontWeight.bold),
@@ -177,26 +170,22 @@ class _PaymentScreenState extends State<PaymentScreen> {
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
-        ...paymentMethods
-            .map(
-              (method) => Column(
-                children: [
-                  PaymentMethodCard(
-                    method: method,
-                    isSelected: selectedPaymentMethod == method.id,
-                    onTap: () {
-                      setState(() {
-                        selectedPaymentMethod = method.id;
-                        showPhoneInput = method.requiresPhoneNumber;
-                        if (!method.requiresPhoneNumber) phoneNumber = '';
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                ],
-              ),
-            )
-            .toList(),
+        ...paymentMethods.map((method) => Column(
+          children: [
+            PaymentMethodCard(
+              method: method,
+              isSelected: selectedPaymentMethod == method.id,
+              onTap: () {
+                setState(() {
+                  selectedPaymentMethod = method.id;
+                  showPhoneInput = method.requiresPhoneNumber;
+                  if (!method.requiresPhoneNumber) phoneNumber = '';
+                });
+              },
+            ),
+            const SizedBox(height: 12),
+          ],
+        )).toList(),
         if (showPhoneInput) _buildPhoneNumberInput(),
       ],
     );
@@ -258,50 +247,49 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
   Widget _buildPlaceOrderButton(BuildContext context) {
     return SizedBox(
-  width: double.infinity,
-  child: ElevatedButton(
-    onPressed: isProcessing ? null : () => _processPayment(context),
-    style: ElevatedButton.styleFrom(
-      backgroundColor: isProcessing
-          ? Colors.grey[400]
-          : (selectedPaymentMethod != null ? _getBorderColor() : Colors.blue),
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-    ),
-    child: Stack(
-      alignment: Alignment.center,
-      children: [
-        AnimatedOpacity(
-          opacity: isProcessing ? 0 : 1,
-          duration: const Duration(milliseconds: 200),
-          child: const Text(
-            'Place Order',
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-            ),
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: isProcessing ? null : () => _processPayment(context),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: isProcessing
+              ? Colors.grey[400]
+              : (selectedPaymentMethod != null ? _getBorderColor() : Colors.blue),
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
           ),
         ),
-        if (isProcessing)
-          const SizedBox(
-            height: 24,
-            width: 24,
-            child: CircularProgressIndicator(
-              color: Colors.white,
-              strokeWidth: 3,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            AnimatedOpacity(
+              opacity: isProcessing ? 0 : 1,
+              duration: const Duration(milliseconds: 200),
+              child: const Text(
+                'Place Order',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
-          ),
-      ],
-    ),
-  ),
-);
+            if (isProcessing)
+              const SizedBox(
+                height: 24,
+                width: 24,
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 3,
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
   }
 
-  // In payment_screen.dart, update the _processPayment method:
-Future<void> _processPayment(BuildContext context) async {
+  Future<void> _processPayment(BuildContext context) async {
   if (!_formKey.currentState!.validate()) return;
   if (selectedPaymentMethod == null) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -317,32 +305,50 @@ Future<void> _processPayment(BuildContext context) async {
     final cartProvider = Provider.of<CartProvider>(context, listen: false);
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     
+    // Get seller email from the first item in cart
+    final sellerEmail = widget.items.isNotEmpty 
+        ? widget.items.first.sellerEmail 
+        : null;
+
+    if (sellerEmail == null) {
+      throw Exception('Seller information not available');
+    }
+
+    // Get merchant name from first item's subtitle
     final merchantName = widget.items.isNotEmpty 
         ? widget.items.first.subtitle 
         : 'Unknown Merchant';
+    
     final customerName = authProvider.user?.name ?? 'Customer';
 
     final newOrder = Order(
       id: _generateOrderId(),
       orderTime: DateTime.now(),
-      pickupTime: deliveryTime,
+      pickupTime: pickupTime,
       items: widget.items.map((item) => OrderItem(
         name: item.name,
         image: item.image,
         subtitle: item.subtitle,
         price: item.price,
         quantity: item.quantity,
+        sellerEmail: item.sellerEmail, // Add seller email to each item
       )).toList(),
       paymentMethod: paymentMethods
           .firstWhere((m) => m.id == selectedPaymentMethod)
           .name,
       merchantName: merchantName,
-      customerName: customerName, // Added customer name
+      merchantEmail: sellerEmail, // Set seller email for the order
+      customerName: customerName,
+      notes: notes.isNotEmpty ? notes : null,
     );
 
-    orderProvider.addOrder(newOrder);
+    await orderProvider.addOrder(newOrder);
     cartProvider.removeItems(widget.items);
 
+    // Here you would typically send the order to the seller's email
+    // For now we'll just log it
+    debugPrint('Order sent to seller: $sellerEmail');
+    
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
@@ -361,9 +367,6 @@ Future<void> _processPayment(BuildContext context) async {
   String _generateOrderId() {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     final random = Random();
-    return List.generate(
-      6,
-      (index) => chars[random.nextInt(chars.length)],
-    ).join();
+    return List.generate(6, (index) => chars[random.nextInt(chars.length)]).join();
   }
 }

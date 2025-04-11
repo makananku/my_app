@@ -1,12 +1,12 @@
 class User {
   final String email;
-  final String password;
+  final String? password; // Bisa nullable untuk AuthProvider
   final String name;
-  final String userType; // 'student' or 'seller'
+  final String userType; // 'customer' or 'seller'
 
   User({
     required this.email,
-    required this.password,
+    this.password, // Di AuthProvider tidak butuh password
     required this.name,
     required this.userType,
   });

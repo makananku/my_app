@@ -12,7 +12,10 @@ class AuthProvider with ChangeNotifier {
   bool get isLoading => _isLoading;
   bool get isLoggedIn => _user != null;
   bool get isSeller => _user?.userType == 'seller';
-  bool get isCustomer => _user?.userType == 'customer'; // Diubah dari !isSeller
+  bool get isCustomer => _user?.userType == 'customer';
+  String? get sellerEmail => isSeller ? _user?.email : null;
+  String? get customerEmail => isCustomer ? _user?.email : null;
+  String? get customerName => isCustomer ? _user?.name : null;
 
   Future<void> initialize() async {
     _isLoading = true;

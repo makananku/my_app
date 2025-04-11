@@ -16,7 +16,7 @@ class OrderCard extends StatelessWidget {
     );
 
     return Card(
-      color: Colors.white, 
+      color: Colors.white,
       elevation: 2,
       margin: const EdgeInsets.only(bottom: 16),
       shape: RoundedRectangleBorder(
@@ -24,65 +24,92 @@ class OrderCard extends StatelessWidget {
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: Container(
-          color: Colors.white, 
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Order #${order.id}',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black, 
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Order #${order.id}',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                ),
+                Chip(
+                  label: Text(
+                    order.status.toUpperCase(),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: _getStatusTextColor(order.status),
                     ),
                   ),
-                  Chip(
-                    label: Text(
-                      order.status.toUpperCase(),
+                  backgroundColor: _getStatusColor(order.status),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Merchant: ${order.merchantName}',
+              style: TextStyle(color: Colors.grey[600]),
+            ),
+            Text(
+              'Pickup: ${DateFormat('dd MMM yyyy, HH:mm').format(order.pickupTime)}',
+              style: TextStyle(color: Colors.grey[600]),
+            ),
+            Text(
+              'Paid with ${order.paymentMethod}',
+              style: TextStyle(color: Colors.grey[600]),
+            ),
+            
+            // Display customer notes if available
+            if (order.notes != null && order.notes!.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.blue[50],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Your Notes:',
                       style: TextStyle(
-                        fontSize: 12,
-                        color: order.status == 'ongoing' 
-                            ? Colors.orange[800] 
-                            : Colors.green[800],
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue,
                       ),
                     ),
-                    backgroundColor: order.status == 'ongoing' 
-                        ? Colors.orange[100] 
-                        : Colors.green[100],
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Pickup: ${DateFormat('dd MMM yyyy, HH:mm').format(order.pickupTime)}',
-                style: TextStyle(color: Colors.grey[600]),
-              ),
-              Text(
-                'Paid with ${order.paymentMethod}',
-                style: TextStyle(color: Colors.grey[600]),
-              ),
-              const Divider(height: 24),
-              ...order.items.map((item) => _buildOrderItem(item, currencyFormat)).toList(),
-              const Divider(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'TOTAL',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  Text(
-                    currencyFormat.format(order.totalPrice),
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ],
+                    const SizedBox(height: 4),
+                    Text(
+                      order.notes!,
+                      style: TextStyle(color: Colors.grey[700]),
+                    ),
+                  ],
+                ),
               ),
             ],
-          ),
+
+            const Divider(height: 24),
+            ...order.items.map((item) => _buildOrderItem(item, currencyFormat)).toList(),
+            const Divider(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'TOTAL',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                Text(
+                  currencyFormat.format(order.totalPrice),
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
@@ -131,5 +158,31 @@ class OrderCard extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status) {
+      case 'completed':
+        return Colors.green[100]!;
+      case 'cancelled':
+        return Colors.red[100]!;
+      case 'ready':
+        return Colors.blue[100]!;
+      default: // pending, processing
+        return Colors.orange[100]!;
+    }
+  }
+
+  Color _getStatusTextColor(String status) {
+    switch (status) {
+      case 'completed':
+        return Colors.green[800]!;
+      case 'cancelled':
+        return Colors.red[800]!;
+      case 'ready':
+        return Colors.blue[800]!;
+      default: // pending, processing
+        return Colors.orange[800]!;
+    }
   }
 }

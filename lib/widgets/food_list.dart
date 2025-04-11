@@ -3,7 +3,7 @@ import '../data/food_data.dart';
 
 class FoodList extends StatelessWidget {
   final String selectedCategory;
-  final Function(String, String, String, String) onFoodItemTap;
+  final Function(String, String, String, String, String) onFoodItemTap; // Changed to include sellerEmail
 
   const FoodList({
     Key? key,
@@ -29,11 +29,13 @@ class FoodList extends StatelessWidget {
             time: food["time"]!,
             imgUrl: food["imgUrl"]!,
             price: food["price"]!,
+            sellerEmail: food["sellerEmail"] ?? '', // Add sellerEmail
             onTap: () => onFoodItemTap(
               food["title"]!,
               food["price"]!,
               food["imgUrl"]!,
               food["subtitle"]!,
+              food["sellerEmail"] ?? '', // Pass sellerEmail
             ),
           );
         },
@@ -48,6 +50,7 @@ class FoodCard extends StatelessWidget {
   final String time;
   final String imgUrl;
   final String price;
+  final String sellerEmail; // Add sellerEmail
   final VoidCallback onTap;
 
   const FoodCard({
@@ -57,6 +60,7 @@ class FoodCard extends StatelessWidget {
     required this.time,
     required this.imgUrl,
     required this.price,
+    required this.sellerEmail, // Add to constructor
     required this.onTap,
   }) : super(key: key);
 

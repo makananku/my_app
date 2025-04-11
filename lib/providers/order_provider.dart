@@ -70,7 +70,7 @@ class OrderProvider with ChangeNotifier {
         merchantName: _orders[index].merchantName,
         customerName: _orders[index].customerName,
         status: newStatus,
-        cancellationReason: reason,
+        cancellationReason: reason, merchantEmail: '',
       );
       notifyListeners();
       await _saveOrders();
@@ -97,7 +97,7 @@ class OrderProvider with ChangeNotifier {
       items: items,
       paymentMethod: paymentMethod,
       merchantName: merchantName,
-      customerName: customerName,
+      customerName: customerName, merchantEmail: '',
     );
   }
 }

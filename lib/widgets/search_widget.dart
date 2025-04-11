@@ -8,7 +8,7 @@ class SearchWidget extends StatefulWidget {
   final Function(String) onSearchSubmitted;
   final Function(String) onFillSearchBar;
   final Function(String) onRemoveRecentSearch;
-  final Function(String, String, String, String) onFoodItemTap;
+  final Function(String, String, String, String, String) onFoodItemTap;
   final bool isSearchActive;
   final FocusNode focusNode;
   final Widget categorySelector;
@@ -157,6 +157,7 @@ class _SearchWidgetState extends State<SearchWidget> {
                   food["price"]!,
                   food["imgUrl"]!,
                   food["subtitle"]!,
+                  food["sellerEmail"] ?? '',
                 );
               },
             );
@@ -234,50 +235,50 @@ class _SearchWidgetState extends State<SearchWidget> {
   }
 
   Widget _buildRecommendedSection(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 8.0),
-          child: Text(
-            "Recommended for you",
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: Colors.black,
-            ),
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Padding(
+        padding: const EdgeInsets.only(left: 8.0),
+        child: Text(
+          "Recommended for you",
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: Colors.black,
           ),
         ),
-        const SizedBox(height: 16),
-        FoodList(
-          selectedCategory: 'All',
-          onFoodItemTap: widget.onFoodItemTap,
-        ),
-      ],
-    );
-  }
+      ),
+      const SizedBox(height: 16),
+      FoodList(
+        selectedCategory: 'All',
+        onFoodItemTap: widget.onFoodItemTap, // Now matches the 5-parameter version
+      ),
+    ],
+  );
+}
 
-  Widget _buildOrderAgainSection(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 8.0),
-          child: Text(
-            "Order Again",
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: Colors.black,
-            ),
+Widget _buildOrderAgainSection(BuildContext context) {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Padding(
+        padding: const EdgeInsets.only(left: 8.0),
+        child: Text(
+          "Order Again",
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: Colors.black,
           ),
         ),
-        const SizedBox(height: 16),
-        FoodList(
-          selectedCategory: 'All',
-          onFoodItemTap: widget.onFoodItemTap,
-        ),
-      ],
-    );
-  }
+      ),
+      const SizedBox(height: 16),
+      FoodList(
+        selectedCategory: 'All',
+        onFoodItemTap: widget.onFoodItemTap, // Now matches the 5-parameter version
+      ),
+    ],
+  );
+}
 
   List<Map<String, String>> _searchFoodItems(String query) {
     final allFoodItems = FoodData.getFoodItems('All');

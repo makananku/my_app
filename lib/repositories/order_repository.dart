@@ -21,10 +21,10 @@ class OrderRepository {
         image: item.image,
         subtitle: item.subtitle,
         price: item.price,
-        quantity: item.quantity,
+        quantity: item.quantity, sellerEmail: '',
       )).toList(),
       paymentMethod: paymentMethod,
-      merchantName: merchantName, customerName: '', // Using first item's subtitle as merchant name
+      merchantName: merchantName, customerName: '', merchantEmail: '', // Using first item's subtitle as merchant name
     );
 
     _orders.insert(0, order);
