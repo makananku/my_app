@@ -6,10 +6,12 @@ class Order {
   final String status;
   final String paymentMethod;
   final String merchantName;
-  final String merchantEmail; // Baru
+  final String merchantEmail;
   final String customerName;
   final String? cancellationReason;
-  final String? notes; // Baru
+  final String? notes;
+  final DateTime? completedTime;
+  final DateTime? cancelledTime;
 
   Order({
     required this.id,
@@ -18,11 +20,13 @@ class Order {
     required this.items,
     required this.paymentMethod,
     required this.merchantName,
-    required this.merchantEmail, // Baru
+    required this.merchantEmail,
     required this.customerName,
     this.status = 'pending',
     this.cancellationReason,
-    this.notes, // Baru
+    this.notes,
+    this.completedTime,
+    this.cancelledTime,
   });
 
   double get totalPrice {
@@ -38,8 +42,12 @@ class Order {
       'status': status,
       'paymentMethod': paymentMethod,
       'merchantName': merchantName,
+      'merchantEmail': merchantEmail,
       'customerName': customerName,
       'cancellationReason': cancellationReason,
+      'notes': notes,
+      'completedTime': completedTime?.toIso8601String(),
+      'cancelledTime': cancelledTime?.toIso8601String(),
     };
   }
 
@@ -51,9 +59,13 @@ class Order {
       items: (map['items'] as List).map((i) => OrderItem.fromMap(i)).toList(),
       paymentMethod: map['paymentMethod'],
       merchantName: map['merchantName'],
+      merchantEmail: map['merchantEmail'] ?? '',
       customerName: map['customerName'],
       status: map['status'] ?? 'pending',
-      cancellationReason: map['cancellationReason'], merchantEmail: '',
+      cancellationReason: map['cancellationReason'],
+      notes: map['notes'],
+      completedTime: map['completedTime'] != null ? DateTime.parse(map['completedTime']) : null,
+      cancelledTime: map['cancelledTime'] != null ? DateTime.parse(map['cancelledTime']) : null,
     );
   }
 }
@@ -64,13 +76,15 @@ class OrderItem {
   final String subtitle;
   final int price;
   final int quantity;
+  final String sellerEmail;
 
   OrderItem({
     required this.name,
     required this.image,
     required this.subtitle,
     required this.price,
-    required this.quantity, required String sellerEmail,
+    required this.quantity,
+    required this.sellerEmail,
   });
 
   Map<String, dynamic> toMap() {
@@ -80,6 +94,7 @@ class OrderItem {
       'subtitle': subtitle,
       'price': price,
       'quantity': quantity,
+      'sellerEmail': sellerEmail,
     };
   }
 
@@ -89,7 +104,8 @@ class OrderItem {
       image: map['image'],
       subtitle: map['subtitle'],
       price: map['price'],
-      quantity: map['quantity'], sellerEmail: '',
+      quantity: map['quantity'],
+      sellerEmail: map['sellerEmail'] ?? '',
     );
   }
 }

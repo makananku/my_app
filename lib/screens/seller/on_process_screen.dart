@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:my_app/auth/auth_provider.dart';
+import 'package:my_app/screens/seller/completed_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:my_app/providers/order_provider.dart';
 import 'package:my_app/models/order_model.dart';
 import 'package:my_app/screens/seller/home_screen.dart';
-import 'package:my_app/widgets/seller_custom_bottom_navigation.dart';
 
 class OnProcessScreen extends StatelessWidget {
   const OnProcessScreen({super.key});
@@ -15,12 +15,16 @@ class OnProcessScreen extends StatelessWidget {
     final orderProvider = Provider.of<OrderProvider>(context);
     final authProvider = Provider.of<AuthProvider>(context);
     final sellerEmail = authProvider.user?.email ?? '';
-    
+
     // Filter orders by seller email and processing status
-    final processingOrders = orderProvider.orders.where((order) => 
-      order.merchantEmail == sellerEmail && 
-      (order.status == 'pending' || order.status == 'processing')
-    ).toList();
+    final processingOrders =
+        orderProvider.orders
+            .where(
+              (order) =>
+                  order.merchantEmail == sellerEmail &&
+                  (order.status == 'pending' || order.status == 'processing'),
+            )
+            .toList();
 
     return Scaffold(
       appBar: AppBar(
@@ -28,17 +32,16 @@ class OnProcessScreen extends StatelessWidget {
         centerTitle: true,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const SellerHomeScreen()),
-          ),
+          onPressed:
+              () => Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const SellerHomeScreen(),
+                ),
+              ),
         ),
       ),
       body: _buildOrderList(processingOrders),
-      bottomNavigationBar: SellerCustomBottomNavigation(
-        selectedIndex: 0,
-        context: context,
-      ),
     );
   }
 
@@ -67,7 +70,8 @@ class OnProcessScreen extends StatelessWidget {
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: orders.length,
-        itemBuilder: (context, index) => _buildOrderCard(context, orders[index]),
+        itemBuilder:
+            (context, index) => _buildOrderCard(context, orders[index]),
       ),
     );
   }
@@ -82,9 +86,7 @@ class OnProcessScreen extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -104,9 +106,7 @@ class OnProcessScreen extends StatelessWidget {
                 Chip(
                   label: Text(
                     order.status.toUpperCase(),
-                    style: TextStyle(
-                      color: _getStatusTextColor(order.status),
-                    ),
+                    style: TextStyle(color: _getStatusTextColor(order.status)),
                   ),
                   backgroundColor: _getStatusColor(order.status),
                 ),
@@ -123,7 +123,7 @@ class OnProcessScreen extends StatelessWidget {
               'Pickup: ${DateFormat('dd MMM yyyy, HH:mm').format(order.pickupTime)}',
               style: TextStyle(color: Colors.grey[600]),
             ),
-            
+
             // Display customer notes if available
             if (order.notes != null && order.notes!.isNotEmpty) ...[
               const SizedBox(height: 8),
@@ -224,16 +224,17 @@ class OnProcessScreen extends StatelessWidget {
               width: 50,
               height: 50,
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
-                width: 50,
-                height: 50,
-                color: Colors.grey[200],
-                child: const Icon(Icons.fastfood, color: Colors.grey),
-              ),
+              errorBuilder:
+                  (_, __, ___) => Container(
+                    width: 50,
+                    height: 50,
+                    color: Colors.grey[200],
+                    child: const Icon(Icons.fastfood, color: Colors.grey),
+                  ),
             ),
           ),
           const SizedBox(width: 12),
-          
+
           // Item details
           Expanded(
             child: Column(
@@ -251,13 +252,15 @@ class OnProcessScreen extends StatelessWidget {
               ],
             ),
           ),
-          
+
           // Item quantity and price
           Text('${item.quantity}x'),
           const SizedBox(width: 12),
           Text(
-            NumberFormat.currency(symbol: 'Rp ', decimalDigits: 0)
-                .format(item.price),
+            NumberFormat.currency(
+              symbol: 'Rp ',
+              decimalDigits: 0,
+            ).format(item.price),
           ),
         ],
       ),
@@ -291,37 +294,35 @@ class OnProcessScreen extends StatelessWidget {
   }
 
   void _markAsReady(BuildContext context, Order order) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Confirm Ready'),
-        content: const Text('Are you sure you want to mark this order as ready for pickup?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('CANCEL'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
-            ),
-            onPressed: () {
-              Provider.of<OrderProvider>(context, listen: false)
-                  .updateOrderStatus(order.id, 'ready');
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Order marked as ready'),
-                  backgroundColor: Colors.green,
-                ),
-              );
-            },
-            child: const Text('CONFIRM', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-  }
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('Confirm Ready'),
+      content: const Text('Are you sure you want to mark this order as ready for pickup?'),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('CANCEL'),
+        ),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+          onPressed: () {
+            Provider.of<OrderProvider>(context, listen: false)
+                .updateOrderStatus(order.id, 'completed'); // Ubah dari 'ready' ke 'completed'
+            Navigator.pop(context);
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Order marked as ready for pickup'),
+                backgroundColor: Colors.green,
+              ),
+            );
+          },
+          child: const Text('CONFIRM', style: TextStyle(color: Colors.white)),
+        ),
+      ],
+    ),
+  );
+}
 
   void _cancelOrder(BuildContext context, Order order) {
     final reasonController = TextEditingController();
@@ -329,59 +330,67 @@ class OnProcessScreen extends StatelessWidget {
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Cancel Order'),
-        content: Form(
-          key: formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text('Please provide a reason for cancellation:'),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: reasonController,
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  labelText: 'Cancellation Reason',
-                  hintText: 'E.g. Out of stock, kitchen closed',
-                ),
-                maxLines: 3,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter a reason';
-                  }
-                  return null;
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Cancel Order'),
+            content: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('Please provide a reason for cancellation:'),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: reasonController,
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                      labelText: 'Cancellation Reason',
+                      hintText: 'E.g. Out of stock, kitchen closed',
+                    ),
+                    maxLines: 3,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter a reason';
+                      }
+                      return null;
+                    },
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('DISCARD'),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                onPressed: () {
+                  if (!formKey.currentState!.validate()) return;
+
+                  Provider.of<OrderProvider>(
+                    context,
+                    listen: false,
+                  ).updateOrderStatus(
+                    order.id,
+                    'cancelled',
+                    reason: reasonController.text,
+                  );
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Order has been cancelled'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
                 },
+                child: const Text(
+                  'CONFIRM',
+                  style: TextStyle(color: Colors.white),
+                ),
               ),
             ],
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('DISCARD'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-            ),
-            onPressed: () {
-              if (!formKey.currentState!.validate()) return;
-              
-              Provider.of<OrderProvider>(context, listen: false)
-                  .updateOrderStatus(order.id, 'cancelled', reason: reasonController.text);
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Order has been cancelled'),
-                  backgroundColor: Colors.red,
-                ),
-              );
-            },
-            child: const Text('CONFIRM', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
     );
   }
 }
